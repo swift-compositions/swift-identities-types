@@ -47,7 +47,7 @@ let package = Package(
         .package(url: "https://github.com/swift-compositions/swift-dependencies.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-emailaddress.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-json-web-token.git", branch: "main"),
-        .package(url: "https://github.com/swift-molecules/swift-tagged.git", branch: "main"),
+        .package(url: "https://github.com/swift-atoms/swift-tagged.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-html-form-coder.git", branch: "main"),
         .package(url: "https://github.com/swift-standards/swift-html-standard.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-dual.git", branch: "main"),
