@@ -5,22 +5,21 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA {
     /// TOTP-specific types and operations.
     public struct TOTP: @unchecked Sendable {
         public var client: Identity.MFA.TOTP.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.TOTP.API>
 
         public init(
-            client: Identity.MFA.TOTP.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.TOTP.API> = Identity
-                .MFA.TOTP.API.Router().eraseToAnyParserPrinter()
+            client: Identity.MFA.TOTP.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

@@ -5,7 +5,10 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Email {
     /// Namespace containing email change functionality.
@@ -16,16 +19,11 @@ extension Identity.Email {
     /// 3. Confirming the change with a verification token
     public struct Change: @unchecked Sendable {
         public var client: Identity.Email.Change.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Email.Change.API>
 
         public init(
-            client: Identity.Email.Change.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Email.Change.API> =
-                Identity.Email.Change.API
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.Email.Change.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

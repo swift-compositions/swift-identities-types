@@ -36,7 +36,6 @@ extension Identity.Authentication: Dependency.Key.Test {
                     )
                 }
             ),
-            router: Identity.Authentication.Route.Router().eraseToAnyParserPrinter(),
             token: .init(
                 access: { token throws(Identity.Authentication.Token.Client.Error) in
                     do {

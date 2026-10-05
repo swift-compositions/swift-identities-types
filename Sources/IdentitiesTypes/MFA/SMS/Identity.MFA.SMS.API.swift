@@ -5,12 +5,16 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import Dual
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA.SMS {
     /// SMS-based authentication operations.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Setup SMS with phone number
@@ -30,43 +34,56 @@ extension Identity.MFA.SMS {
     }
 }
 
-extension Identity.MFA.SMS.API {
+extension Identity.MFA.SMS.API: HTTP.Routable {
     /// Router for SMS endpoints.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.MFA.SMS.API> {
+        Coder::Case(
+            Identity.MFA.SMS.API.cases.setup.prism, Identity.MFA.SMS.API.cases.setup.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.setup
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.SMS.Setup>())
+            HTTP.Segment.End()
+        }
 
-        public init() {}
+        Coder::Case(
+            Identity.MFA.SMS.API.cases.requestCode.prism,
+            Identity.MFA.SMS.API.cases.requestCode.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("request")
+            HTTP.Segment.End()
+        }
 
-        public var body: some URLRouting.Router<Identity.MFA.SMS.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.MFA.SMS.API.cases.setup)) {
-                    Method.post
-                    Path.setup
-                    URLRouting.Body(coding: .json(Identity.MFA.SMS.Setup.self))
-                }
+        Coder::Case(
+            Identity.MFA.SMS.API.cases.verify.prism, Identity.MFA.SMS.API.cases.verify.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.verify
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.SMS.Verify>())
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.SMS.API.cases.requestCode)) {
-                    Method.post
-                    Path { "request" }
-                }
+        Coder::Case(
+            Identity.MFA.SMS.API.cases.updatePhoneNumber.prism,
+            Identity.MFA.SMS.API.cases.updatePhoneNumber.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.update
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.SMS.UpdatePhoneNumber>())
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.SMS.API.cases.verify)) {
-                    Method.post
-                    Path.verify
-                    URLRouting.Body(coding: .json(Identity.MFA.SMS.Verify.self))
-                }
-
-                URLRouting.Route(.case(Identity.MFA.SMS.API.cases.updatePhoneNumber)) {
-                    Method.post
-                    Path.update
-                    URLRouting.Body(coding: .json(Identity.MFA.SMS.UpdatePhoneNumber.self))
-                }
-
-                URLRouting.Route(.case(Identity.MFA.SMS.API.cases.disable)) {
-                    Method.post
-                    Path.disable
-                    URLRouting.Body(coding: .json(Identity.MFA.DisableRequest.self))
-                }
-            }
+        Coder::Case(
+            Identity.MFA.SMS.API.cases.disable.prism, Identity.MFA.SMS.API.cases.disable.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.disable
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.DisableRequest>())
+            HTTP.Segment.End()
         }
     }
 }

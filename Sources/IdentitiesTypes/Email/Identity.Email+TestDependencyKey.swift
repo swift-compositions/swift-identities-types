@@ -7,6 +7,7 @@
 
 import Dependencies
 import EmailAddress
+import RFC_6531
 
 extension Identity.Email: Dependency.Key.Test {
     public static var testValue: Self {
@@ -24,7 +25,7 @@ extension Identity.Email.Change: Dependency.Key.Test {
             client: .init(
                 request: { newEmail throws(Identity.Email.Change.Client.Error) in
                     do {
-                        _ = try EmailAddress(newEmail)
+                        _ = EmailAddress(rfc6531: try RFC_6531.Mailbox(newEmail))
                         guard let currentEmail = await database.currentUser else {
                             throw Identity._TestDatabase.TestError.userNotFound
                         }
@@ -55,8 +56,7 @@ extension Identity.Email.Change: Dependency.Key.Test {
                         throw Identity.Email.Change.Client.Error.confirm(reason: "\(error)")
                     }
                 }
-            ),
-            router: Identity.Email.Change.API.Router().eraseToAnyParserPrinter()
+            )
         )
     }
 }

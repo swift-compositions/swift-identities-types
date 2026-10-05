@@ -5,8 +5,10 @@
 //  Feature-based routing for Email functionality
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Email {
     /// Complete routing for email management features including both API and View endpoints.
@@ -20,6 +22,8 @@ extension Identity.Email {
     /// let route = Identity.Email.Route.api(.change(.request(...)))
     /// let viewRoute = Identity.Email.Route.view(.change(.request))
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum Route: Equatable, Sendable {
         /// API endpoints for email operations
@@ -30,30 +34,30 @@ extension Identity.Email {
     }
 }
 
-extension Identity.Email.Route {
+extension Identity.Email.Route: HTTP.Routable {
     /// Router for the complete Email feature including both API and View routes.
     ///
     /// URL structure:
     /// - API routes: `/api/email/...`
     /// - View routes: `/email/...`
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
+    public static var router: some HTTP.Router.`Protocol`<Identity.Email.Route> {
+        // API routes under /api prefix
+        Coder::Case(
+            Identity.Email.Route.cases.api.prism, Identity.Email.Route.cases.api.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("api")
+            HTTP.Segment("email")
+            Identity.Email.API.router
+        }
 
-        public var body: some URLRouting.Router<Identity.Email.Route> {
-            OneOf {
-                // API routes under /api prefix
-                URLRouting.Route(.case(Identity.Email.Route.cases.api)) {
-                    Path { "api" }
-                    Path { "email" }
-                    Identity.Email.API.Router()
-                }
-
-                // View routes (no /api prefix)
-                URLRouting.Route(.case(Identity.Email.Route.cases.view)) {
-                    Path { "email" }
-                    Identity.Email.View.Router()
-                }
-            }
+        // View routes (no /api prefix)
+        Coder::Case(
+            Identity.Email.Route.cases.view.prism, Identity.Email.Route.cases.view.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("email")
+            Identity.Email.View.router
         }
     }
 }

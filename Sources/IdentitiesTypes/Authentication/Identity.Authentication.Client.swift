@@ -5,10 +5,13 @@
 //  Created by Coen ten Thije Boonkkamp on 12/02/2025.
 //
 
+import Case_Macro
+import Coder
 import Dependencies
+import HTTP
+import HTTP_Router
 import JWT
 import RFC_6750
-import URLRouting
 
 extension Identity.Authentication {
     /// A client interface for handling user authentication operations.

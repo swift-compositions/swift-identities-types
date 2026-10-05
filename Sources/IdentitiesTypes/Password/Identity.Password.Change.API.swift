@@ -5,11 +5,15 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Password.Change {
     /// Password change API endpoints for authenticated users.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Request a password change (requires current password)
@@ -17,16 +21,14 @@ extension Identity.Password.Change {
     }
 }
 
-extension Identity.Password.Change.API {
+extension Identity.Password.Change.API: HTTP.Routable {
     /// Router for password change endpoints.
-    public struct Router: ParserPrinter, Sendable {
-
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Password.Change.API> {
-            URLRouting.Route(.case(Identity.Password.Change.API.cases.request)) {
-                Identity.Password.Change.Request.Router()
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Password.Change.API> {
+        Coder::Case(
+            Identity.Password.Change.API.cases.request.prism,
+            Identity.Password.Change.API.cases.request.fold, absent: .mismatch
+        ) {
+            Identity.Password.Change.Request.router
         }
     }
 }

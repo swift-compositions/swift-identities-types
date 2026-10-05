@@ -5,12 +5,16 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import Dual
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA.Email {
     /// Email-based authentication operations.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Setup email MFA
@@ -30,43 +34,56 @@ extension Identity.MFA.Email {
     }
 }
 
-extension Identity.MFA.Email.API {
+extension Identity.MFA.Email.API: HTTP.Routable {
     /// Router for Email endpoints.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.MFA.Email.API> {
+        Coder::Case(
+            Identity.MFA.Email.API.cases.setup.prism, Identity.MFA.Email.API.cases.setup.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.setup
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.Email.Setup>())
+            HTTP.Segment.End()
+        }
 
-        public init() {}
+        Coder::Case(
+            Identity.MFA.Email.API.cases.requestCode.prism,
+            Identity.MFA.Email.API.cases.requestCode.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("request")
+            HTTP.Segment.End()
+        }
 
-        public var body: some URLRouting.Router<Identity.MFA.Email.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.MFA.Email.API.cases.setup)) {
-                    Method.post
-                    Path.setup
-                    URLRouting.Body(coding: .json(Identity.MFA.Email.Setup.self))
-                }
+        Coder::Case(
+            Identity.MFA.Email.API.cases.verify.prism, Identity.MFA.Email.API.cases.verify.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.verify
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.Email.Verify>())
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.Email.API.cases.requestCode)) {
-                    Method.post
-                    Path { "request" }
-                }
+        Coder::Case(
+            Identity.MFA.Email.API.cases.updateEmail.prism,
+            Identity.MFA.Email.API.cases.updateEmail.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.update
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.Email.UpdateEmail>())
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.Email.API.cases.verify)) {
-                    Method.post
-                    Path.verify
-                    URLRouting.Body(coding: .json(Identity.MFA.Email.Verify.self))
-                }
-
-                URLRouting.Route(.case(Identity.MFA.Email.API.cases.updateEmail)) {
-                    Method.post
-                    Path.update
-                    URLRouting.Body(coding: .json(Identity.MFA.Email.UpdateEmail.self))
-                }
-
-                URLRouting.Route(.case(Identity.MFA.Email.API.cases.disable)) {
-                    Method.post
-                    Path.disable
-                    URLRouting.Body(coding: .json(Identity.MFA.DisableRequest.self))
-                }
-            }
+        Coder::Case(
+            Identity.MFA.Email.API.cases.disable.prism, Identity.MFA.Email.API.cases.disable.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.disable
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.DisableRequest>())
+            HTTP.Segment.End()
         }
     }
 }

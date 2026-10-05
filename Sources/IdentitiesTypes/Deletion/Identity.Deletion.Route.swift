@@ -5,8 +5,10 @@
 //  Feature-based routing for Delete functionality
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Deletion {
     /// Complete routing for identity deletion features including both API and View endpoints.
@@ -20,6 +22,8 @@ extension Identity.Deletion {
     /// let route = Identity.Deletion.Route.api(.request(...))
     /// let viewRoute = Identity.Deletion.Route.view(.request)
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum Route: Equatable, Sendable {
         /// API endpoints for deletion operations
@@ -30,30 +34,30 @@ extension Identity.Deletion {
     }
 }
 
-extension Identity.Deletion.Route {
+extension Identity.Deletion.Route: HTTP.Routable {
     /// Router for the complete Delete feature including both API and View routes.
     ///
     /// URL structure:
     /// - API routes: `/api/delete/...`
     /// - View routes: `/delete`
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
+    public static var router: some HTTP.Router.`Protocol`<Identity.Deletion.Route> {
+        // API routes under /api prefix
+        Coder::Case(
+            Identity.Deletion.Route.cases.api.prism, Identity.Deletion.Route.cases.api.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("api")
+            HTTP.Segment("delete")
+            Identity.Deletion.API.router
+        }
 
-        public var body: some URLRouting.Router<Identity.Deletion.Route> {
-            OneOf {
-                // API routes under /api prefix
-                URLRouting.Route(.case(Identity.Deletion.Route.cases.api)) {
-                    Path { "api" }
-                    Path { "delete" }
-                    Identity.Deletion.API.Router()
-                }
-
-                // View routes (no /api prefix)
-                URLRouting.Route(.case(Identity.Deletion.Route.cases.view)) {
-                    Path { "delete" }
-                    Identity.Deletion.View.Router()
-                }
-            }
+        // View routes (no /api prefix)
+        Coder::Case(
+            Identity.Deletion.Route.cases.view.prism, Identity.Deletion.Route.cases.view.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("delete")
+            Identity.Deletion.View.router
         }
     }
 }

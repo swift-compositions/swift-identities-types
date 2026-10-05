@@ -5,7 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 
 extension Identity.Password.Reset {
     /// Confirmation data for completing a password reset.
@@ -40,23 +44,17 @@ extension Identity.Password.Reset {
     }
 }
 
-extension Identity.Password.Reset.Confirm {
+extension Identity.Password.Reset.Confirm: HTTP.Routable {
     /// Router for handling password reset confirmation endpoints.
     ///
     /// Routes POST requests to the "/confirm" path with form-encoded body.
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Password.Reset.Confirm> {
-            // Route-level wrap (W3): collapses the Skip-chain's `Either` failure into
-            // `RFC_3986.URI.Routing.Error` (url-routing FormBodyRouteTests pattern).
-            URLRouting.Route(.identity()) {
-                Method.post
-                Path.confirm
-                URLRouting.Body(
-                    coding: .form(Identity.Password.Reset.Confirm.self, decoder: .identities)
-                )
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Password.Reset.Confirm> {
+        Coder::Coder(HTTP.Router.Request.self, HTTP.Router.Request.self) {
+            HTTP.Method.post
+            HTTP.Segment.confirm
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(Identity.Password.Reset.Confirm.self, decoder: .identities))
+            HTTP.Segment.End()
         }
     }
 }

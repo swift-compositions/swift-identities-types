@@ -5,8 +5,10 @@
 //  Feature-based routing system for identity management
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// Complete routing system organized by features.
@@ -29,6 +31,8 @@ extension Identity {
     /// let route = Identity.Route.create(.api(.request(...)))
     /// let viewRoute = Identity.Route.password(.view(.reset(.request)))
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum Route: Equatable, Sendable {
         /// Identity creation and verification
@@ -60,7 +64,7 @@ extension Identity {
     }
 }
 
-extension Identity.Route {
+extension Identity.Route: HTTP.Routable {
     /// Router for the complete composed identity system.
     ///
     /// This router combines all feature routers into a unified routing system.
@@ -75,56 +79,71 @@ extension Identity.Route {
     /// - `/mfa/...` - MFA routes
     /// - `/logout` - Logout endpoint
     /// - `/reauthorize` - Reauthorization endpoint
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
+    public static var router: some HTTP.Router.`Protocol`<Identity.Route> {
+        // Create feature routes
+        Coder::Case(
+            Identity.Route.cases.create.prism, Identity.Route.cases.create.fold, absent: .mismatch
+        ) {
+            Identity.Creation.Route.router
+        }
 
-        public var body: some URLRouting.Router<Identity.Route> {
-            OneOf {
-                // Create feature routes
-                URLRouting.Route(.case(Identity.Route.cases.create)) {
-                    Identity.Creation.Route.Router()
-                }
+        // Authenticate feature routes
+        Coder::Case(
+            Identity.Route.cases.authenticate.prism, Identity.Route.cases.authenticate.fold,
+            absent: .mismatch
+        ) {
+            Identity.Authentication.Route.router
+        }
 
-                // Authenticate feature routes
-                URLRouting.Route(.case(Identity.Route.cases.authenticate)) {
-                    Identity.Authentication.Route.Router()
-                }
+        // Delete feature routes
+        Coder::Case(
+            Identity.Route.cases.delete.prism, Identity.Route.cases.delete.fold, absent: .mismatch
+        ) {
+            Identity.Deletion.Route.router
+        }
 
-                // Delete feature routes
-                URLRouting.Route(.case(Identity.Route.cases.delete)) {
-                    Identity.Deletion.Route.Router()
-                }
+        //                 Email feature routes
+        Coder::Case(
+            Identity.Route.cases.email.prism, Identity.Route.cases.email.fold, absent: .mismatch
+        ) {
+            Identity.Email.Route.router
+        }
+        //
+        // Password feature routes
+        Coder::Case(
+            Identity.Route.cases.password.prism, Identity.Route.cases.password.fold,
+            absent: .mismatch
+        ) {
+            Identity.Password.Route.router
+        }
 
-                //                 Email feature routes
-                URLRouting.Route(.case(Identity.Route.cases.email)) {
-                    Identity.Email.Route.Router()
-                }
-                //
-                // Password feature routes
-                URLRouting.Route(.case(Identity.Route.cases.password)) {
-                    Identity.Password.Route.Router()
-                }
+        // MFA feature routes (optional)
+        Coder::Case(
+            Identity.Route.cases.mfa.prism, Identity.Route.cases.mfa.fold, absent: .mismatch
+        ) {
+            Identity.MFA.Route.router
+        }
 
-                // MFA feature routes (optional)
-                URLRouting.Route(.case(Identity.Route.cases.mfa)) {
-                    Identity.MFA.Route.Router()
-                }
+        // Logout endpoint
+        Coder::Case(
+            Identity.Route.cases.logout.prism, Identity.Route.cases.logout.fold, absent: .mismatch
+        ) {
+            Identity.Logout.Route.router
+        }
 
-                // Logout endpoint
-                URLRouting.Route(.case(Identity.Route.cases.logout)) {
-                    Identity.Logout.Route.Router()
-                }
+        // Reauthorization endpoint
+        Coder::Case(
+            Identity.Route.cases.reauthorize.prism, Identity.Route.cases.reauthorize.fold,
+            absent: .mismatch
+        ) {
+            Identity.Reauthorization.Route.router
+        }
 
-                // Reauthorization endpoint
-                URLRouting.Route(.case(Identity.Route.cases.reauthorize)) {
-                    Identity.Reauthorization.Route.Router()
-                }
-
-                // OAuth feature routes (optional)
-                URLRouting.Route(.case(Identity.Route.cases.oauth)) {
-                    Identity.OAuth.Route.Router()
-                }
-            }
+        // OAuth feature routes (optional)
+        Coder::Case(
+            Identity.Route.cases.oauth.prism, Identity.Route.cases.oauth.fold, absent: .mismatch
+        ) {
+            Identity.OAuth.Route.router
         }
     }
 }

@@ -5,23 +5,23 @@
 //  Created by Coen ten Thije Boonkkamp on 10/09/2025.
 //
 
+import Case_Macro
+import Coder
 import EmailAddress
+import EmailAddress_Foundation_Integration
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// Namespace for OAuth-related functionality within the Identity system.
     public struct OAuth: @unchecked Sendable {
         public var client: Identity.OAuth.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.OAuth.Route>
 
         public init(
-            client: Identity.OAuth.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.OAuth.Route> = Identity
-                .OAuth.Route.Router().eraseToAnyParserPrinter()
+            client: Identity.OAuth.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

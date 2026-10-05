@@ -5,8 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 17/10/2024.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 
 extension Identity.Creation {
     /// Identity creation endpoints that handle new user registration and verification.
@@ -29,6 +32,8 @@ extension Identity.Creation {
     ///   .init(token: "verification-token", email: "new@example.com")
     /// )
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Initiates identity creation with email and password
@@ -39,7 +44,7 @@ extension Identity.Creation {
     }
 }
 
-extension Identity.Creation.API {
+extension Identity.Creation.API: HTTP.Routable {
     /// Routes identity creation requests to their appropriate handlers.
     ///
     /// Defines the URL structure and request formats for identity creation:
@@ -48,35 +53,26 @@ extension Identity.Creation.API {
     ///
     /// Both endpoints expect form-encoded request bodies containing the necessary
     /// identity creation or verification data.
-    public struct Router: ParserPrinter, Sendable {
-
-        public init() {}
-
-        /// The routing logic for identity creation endpoints.
-        ///
-        /// Composes routes for both steps of the identity creation process:
-        /// - The initial identity creation request
-        /// - The email verification step
-        ///
-        /// Each route is handled by its respective router that defines the
-        /// specific request format and validation rules.
-        public var body: some URLRouting.Router<Identity.Creation.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.Creation.API.cases.request)) {
-                    Method.post
-                    Path<PathBuilder.Component<String>>.request
-                    URLRouting.Body(
-                        coding: .form(Identity.Creation.Request.self, decoder: .identities)
-                    )
-                }
-                URLRouting.Route(.case(Identity.Creation.API.cases.verify)) {
-                    Method.post
-                    Path.verify
-                    URLRouting.Body(
-                        coding: .form(Identity.Creation.Verification.self, decoder: .identities)
-                    )
-                }
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Creation.API> {
+        Coder::Case(
+            Identity.Creation.API.cases.request.prism, Identity.Creation.API.cases.request.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.request
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(Identity.Creation.Request.self, decoder: .identities))
+            HTTP.Segment.End()
+        }
+        Coder::Case(
+            Identity.Creation.API.cases.verify.prism, Identity.Creation.API.cases.verify.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.verify
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(Identity.Creation.Verification.self, decoder: .identities))
+            HTTP.Segment.End()
         }
     }
 }

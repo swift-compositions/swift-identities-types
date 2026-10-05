@@ -5,12 +5,17 @@
 //  Created by Coen ten Thije Boonkkamp on 10/09/2025.
 //
 
-import Dual
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
+import Pair
 
 extension Identity.View {
     /// OAuth view routes for UI pages
+    @Prisms
+    @Folds
     @Cases
     public enum OAuth: Equatable, Sendable {
         /// OAuth login page showing available providers
@@ -27,71 +32,69 @@ extension Identity.View {
     }
 }
 
-extension Identity.View.OAuth {
+extension Identity.View.OAuth: HTTP.Routable {
     /// Router for OAuth view routes
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
+    public static var router: some HTTP.Router.`Protocol`<Identity.View.OAuth> {
+        // GET /oauth/login
+        Coder::Case(
+            Identity.View.OAuth.cases.login.prism, Identity.View.OAuth.cases.login.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.get
+            HTTP.Segment("oauth")
+            HTTP.Segment("login")
+            HTTP.Segment.End()
+        }
 
-        public var body: some URLRouting.Router<Identity.View.OAuth> {
-            OneOf {
-                // GET /oauth/login
-                URLRouting.Route(.case(Identity.View.OAuth.cases.login)) {
-                    Method.get
-                    Path { "oauth" }
-                    Path { "login" }
-                }
+        // GET /oauth/callback
+        Coder::Case(
+            Identity.View.OAuth.cases.callback.prism, Identity.View.OAuth.cases.callback.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.get
+            HTTP.Segment("oauth")
+            HTTP.Segment("callback")
 
-                // GET /oauth/callback
-                URLRouting.Route(.case(Identity.View.OAuth.cases.callback)) {
-                    Method.get
-                    Path { "oauth" }
-                    Path { "callback" }
-
-                    // The builder pairs left-associatively, so four values arrive as the
-                    // nested tuple `(((String, String), String), String?)` (url-routing
-                    // RoutingErrorTests pattern), not a flat 4-tuple.
-                    Parse(
-                        .memberwise(
-                            { (values: (((String, String), String), String?)) in
-                                Identity.OAuth.CallbackRequest(
-                                    provider: values.0.0.0,
-                                    code: values.0.0.1,
-                                    state: values.0.1,
-                                    redirectURI: values.1
-                                )
-                            },
-                            { ((($0.provider, $0.code), $0.state), $0.redirectURI) }
-                        )
-                    ) {
-                        URLRouting.Query {
-                            RFC_3986.URI.Query.Field("provider", .string, default: "github")
-                            RFC_3986.URI.Query.Field("code") { Parse(.string) }
-                            RFC_3986.URI.Query.Field("state") { Parse(.string) }
-
-                            Optionally {
-                                RFC_3986.URI.Query.Field("redirect_uri") { Parse(.string) }
-                            }
-                        }
-                    }
-                }
-
-                // GET /oauth/connections
-                URLRouting.Route(.case(Identity.View.OAuth.cases.connections)) {
-                    Method.get
-                    Path { "oauth" }
-                    Path { "connections" }
-                }
-
-                // GET /oauth/error
-                URLRouting.Route(.case(Identity.View.OAuth.cases.error)) {
-                    Method.get
-                    Path { "oauth" }
-                    Path { "error" }
-                    URLRouting.Query {
-                        RFC_3986.URI.Query.Field("message") { Parse(.string) }
-                    }
-                }
+            Coder::Coder(
+                { values in
+                    Identity.OAuth.CallbackRequest(
+                        provider: values.first.first.first,
+                        code: values.first.first.second,
+                        state: values.first.second,
+                        redirectURI: values.second
+                    )
+                },
+                from: { Pair(Pair(Pair($0.provider, $0.code), $0.state), $0.redirectURI) }
+            ) {
+                HTTP.Query.Field<String>("provider", default: "github")
+                HTTP.Query.Field<String>("code")
+                HTTP.Query.Field<String>("state")
+                HTTP.Query.Field<String>.Optional("redirect_uri")
             }
+            HTTP.Segment.End()
+        }
+
+        // GET /oauth/connections
+        Coder::Case(
+            Identity.View.OAuth.cases.connections.prism, Identity.View.OAuth.cases.connections.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.get
+            HTTP.Segment("oauth")
+            HTTP.Segment("connections")
+            HTTP.Segment.End()
+        }
+
+        // GET /oauth/error
+        Coder::Case(
+            Identity.View.OAuth.cases.error.prism, Identity.View.OAuth.cases.error.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.get
+            HTTP.Segment("oauth")
+            HTTP.Segment("error")
+            HTTP.Query.Field<String>("message")
+            HTTP.Segment.End()
         }
     }
 }

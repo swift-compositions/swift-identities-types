@@ -8,7 +8,6 @@
 import Dependencies
 import Dependencies_Test_Support
 import EmailAddress
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
@@ -17,15 +16,15 @@ extension Identity.MFA.API {
     @Suite
     struct Test {
 
-        let router: Identity.MFA.API.Router = .init()
+        let router = Identity.MFA.API.self
 
         @Test
         func `Creates correct URL for MFA status get`() throws {
             let mfa: Identity.MFA.API = .status(.get)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/status")
-            #expect(request.httpMethod == "GET")
+            #expect(request.path == "/status")
+            #expect(request.method.rawValue == "GET")
         }
 
         @Test
@@ -33,8 +32,8 @@ extension Identity.MFA.API {
             let mfa: Identity.MFA.API = .totp(.setup)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/totp/setup")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/totp/setup")
+            #expect(request.method.rawValue == "POST")
         }
 
         @Test
@@ -42,8 +41,8 @@ extension Identity.MFA.API {
             let mfa: Identity.MFA.API = .backupCodes(.regenerate)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/backup-codes/regenerate")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/backup-codes/regenerate")
+            #expect(request.method.rawValue == "POST")
         }
 
         @Test
@@ -51,8 +50,8 @@ extension Identity.MFA.API {
             let mfa: Identity.MFA.API = .webauthn(.beginRegistration)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/webauthn/register/begin")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/webauthn/register/begin")
+            #expect(request.method.rawValue == "POST")
         }
     }
 }

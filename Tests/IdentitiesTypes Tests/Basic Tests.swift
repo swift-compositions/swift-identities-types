@@ -8,7 +8,6 @@
 import Dependencies
 import Dependencies_Test_Support
 import EmailAddress
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
@@ -51,11 +50,7 @@ extension Identity.Authentication {
                 refreshToken: "refresh.jwt.token"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(response)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Authentication.Response.self, from: data)
+            let decoded = try jsonRoundTrip(response)
 
             #expect(decoded.accessToken == response.accessToken)
             #expect(decoded.refreshToken == response.refreshToken)
@@ -94,7 +89,10 @@ extension Identity._TestDatabase {
             try await Identity._TestDatabase.Helper.withIsolatedDatabase {
                 @Dependency(\.identity) var identity
 
-                await #expect(throws: Identity._TestDatabase.TestError.invalidCredentials) {
+                await #expect(
+                    throws: Identity.Authentication.Client.Error.credentials(
+                        reason: "\(Identity._TestDatabase.TestError.invalidCredentials)")
+                ) {
                     try await identity.login(
                         username: "nonexistent@example.com",
                         password: "wrongpass"

@@ -5,7 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 
 extension Identity.Email.Change {
     /// Confirmation data for completing an email change.
@@ -32,23 +36,18 @@ extension Identity.Email.Change {
     }
 }
 
-extension Identity.Email.Change.Confirmation {
+extension Identity.Email.Change.Confirmation: HTTP.Routable {
     /// Router for handling email change confirmation endpoints.
     ///
     /// Routes POST requests to the "/confirm" path with form-encoded body.
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Email.Change.Confirmation> {
-            // Route-level wrap (W3): collapses the Skip-chain's `Either` failure into
-            // `RFC_3986.URI.Routing.Error` (url-routing FormBodyRouteTests pattern).
-            URLRouting.Route(.identity()) {
-                Method.post
-                Path { "confirm" }
-                URLRouting.Body(
-                    coding: .form(Identity.Email.Change.Confirmation.self, decoder: .identities)
-                )
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Email.Change.Confirmation> {
+        Coder::Coder(HTTP.Router.Request.self, HTTP.Router.Request.self) {
+            HTTP.Method.post
+            HTTP.Segment("confirm")
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(Identity.Email.Change.Confirmation.self, decoder: .identities)
+            )
+            HTTP.Segment.End()
         }
     }
 }

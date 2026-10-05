@@ -7,7 +7,9 @@
 
 import Dependencies
 import Dependencies_Test_Support
-import Foundation
+import HTTP
+import HTTP_Router
+import RFC_9110
 import Testing
 
 @testable import IdentitiesTypes
@@ -52,14 +54,7 @@ extension Identity.Authentication.Response {
                 refreshToken: "refresh.token.value"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(response)
-
-            let decoder = JSONDecoder()
-            let decodedResponse = try decoder.decode(
-                Identity.Authentication.Response.self,
-                from: data
-            )
+            let decodedResponse = try jsonRoundTrip(response)
 
             #expect(decodedResponse.accessToken == response.accessToken)
             #expect(decodedResponse.refreshToken == response.refreshToken)
@@ -93,11 +88,7 @@ extension RFC_6750.Bearer {
         func `Bearer auth encoding and decoding`() throws {
             let bearerAuth = try RFC_6750.Bearer(token: "api-key-123")
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(bearerAuth)
-
-            let decoder = JSONDecoder()
-            let decodedAuth = try decoder.decode(RFC_6750.Bearer.self, from: data)
+            let decodedAuth = try jsonRoundTrip(bearerAuth)
 
             #expect(decodedAuth.token == bearerAuth.token)
             #expect(decodedAuth == bearerAuth)
@@ -106,18 +97,16 @@ extension RFC_6750.Bearer {
         @Test
         func `Bearer auth router creates correct header`() throws {
             let bearerAuth = try RFC_6750.Bearer(token: "test-token-123")
-            let router = RFC_6750.Bearer.Router()
+            var request = HTTP.Router.Request(method: .get, target: .asterisk)
+            try HTTP.Bearer().serialize(bearerAuth, into: &request)
 
-            let request = try router.request(for: bearerAuth)
-
-            // URLRequest uses allHTTPHeaderFields instead of headers
-            #expect(request.allHTTPHeaderFields?["Authorization"] == "Bearer test-token-123")
+            #expect(request.headers[.authorization].map(\.rawValue) == ["Bearer test-token-123"])
         }
 
         // @Test
         // This test requires URLRequestData which needs different handling
         // func `Bearer router parses the Authorization header`() throws {
-        //     let router = RFC_6750.Bearer.Router()
+        //     let router = RFC_6750.Bearer.self
         //
         //     var request = URLRequestData()
         //     request.headers = ["Authorization": ["Bearer test-token-456"]]
@@ -195,14 +184,7 @@ extension Identity.Authentication.Credentials {
                 password: "securePassword123"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(credentials)
-
-            let decoder = JSONDecoder()
-            let decodedCreds = try decoder.decode(
-                Identity.Authentication.Credentials.self,
-                from: data
-            )
+            let decodedCreds = try jsonRoundTrip(credentials)
 
             #expect(decodedCreds.username == credentials.username)
             #expect(decodedCreds.password == credentials.password)

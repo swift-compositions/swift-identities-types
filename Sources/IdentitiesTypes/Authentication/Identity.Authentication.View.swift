@@ -5,13 +5,17 @@
 //  Feature-based routing for Authentication functionality
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Authentication {
     /// View routes for authentication pages.
     ///
     /// Provides frontend routes for different authentication methods.
+    @Prisms
+    @Folds
     @Cases
     public enum View: Sendable, Hashable, Codable {
         /// Credentials-based login page (username/password)
@@ -24,31 +28,21 @@ extension Identity.Authentication {
     }
 }
 
-extension Identity.Authentication.View {
+extension Identity.Authentication.View: HTTP.Routable {
     /// Router for authentication view endpoints.
     ///
     /// Maps view routes to their URL paths:
     /// - Credentials: `/login` or `/credentials` (both map to same page)
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Authentication.View> {
-            // Support both /login and /credentials paths
-            OneOf {
-                URLRouting.Route(.case(Identity.Authentication.View.cases.credentials)) {
-                    Path { "login" }
-                }
-
-                URLRouting.Route(.case(Identity.Authentication.View.cases.credentials)) {
-                    Path { "credentials" }
-                }
-            }
-
-            // Future auth methods would be added here:
-            // URLRouting.Route(.case(Identity.Authentication.View.cases.oauth)) {
-            //     Path { "oauth" }
-            //     OAuthProvider.Router()
-            // }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Authentication.View> {
+        Coder::Case(Self.cases.credentials.prism, Self.cases.credentials.fold, absent: .mismatch) {
+            HTTP.Method.get
+            HTTP.Segment("login")
+            HTTP.Segment.End()
+        }
+        Coder::Case(Self.cases.credentials.prism, Self.cases.credentials.fold, absent: .mismatch) {
+            HTTP.Method.get
+            HTTP.Segment("credentials")
+            HTTP.Segment.End()
         }
     }
 }

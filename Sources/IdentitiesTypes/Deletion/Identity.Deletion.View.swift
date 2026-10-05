@@ -5,13 +5,17 @@
 //  Feature-based routing for Delete functionality
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Deletion {
     /// View routes for identity deletion pages.
     ///
     /// Provides frontend routes for the deletion flow.
+    @Prisms
+    @Folds
     @Cases
     public enum View: Equatable, Sendable {
         /// Identity deletion request page
@@ -23,16 +27,18 @@ extension Identity.Deletion {
     }
 }
 
-extension Identity.Deletion.View {
+extension Identity.Deletion.View: HTTP.Routable {
     /// Router for deletion view endpoints.
     ///
     /// Maps view routes to their URL paths:
     /// - Request: `/delete` (main deletion page)
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Deletion.View> {
-            URLRouting.Route(.case(Identity.Deletion.View.cases.request))
+    public static var router: some HTTP.Router.`Protocol`<Identity.Deletion.View> {
+        Coder::Case(
+            Identity.Deletion.View.cases.request.prism, Identity.Deletion.View.cases.request.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.get
+            HTTP.Segment.End()
         }
     }
 }

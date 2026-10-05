@@ -5,23 +5,20 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Password {
     /// Namespace containing password change functionality for authenticated users.
     public struct Change: @unchecked Sendable {
         public var client: Identity.Password.Change.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Password.Change.API>
 
         public init(
-            client: Identity.Password.Change.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Password.Change.API> =
-                Identity.Password.Change
-                .API
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.Password.Change.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

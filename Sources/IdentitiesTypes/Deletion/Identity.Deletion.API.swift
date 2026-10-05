@@ -5,8 +5,10 @@
 //  Created by Coen ten Thije Boonkkamp on 17/10/2024.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Deletion {
     /// Identity deletion endpoints with a multi-step confirmation process for safety.
@@ -32,6 +34,8 @@ extension Identity.Deletion {
     ///
     /// > Important: Identity deletion is permanent and cannot be undone after confirmation.
     /// > Identities have a grace period between request and confirmation during which they can cancel.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Codable, Hashable, Sendable {
         /// Initiates identity deletion, requiring recent authentication
@@ -45,7 +49,7 @@ extension Identity.Deletion {
     }
 }
 
-extension Identity.Deletion.API {
+extension Identity.Deletion.API: HTTP.Routable {
     /// Routes identity deletion requests to their appropriate handlers.
     ///
     /// Defines the URL structure for the deletion flow:
@@ -55,36 +59,31 @@ extension Identity.Deletion.API {
     ///
     /// The request endpoint expects re-authentication data, while cancel and confirm
     /// endpoints operate on the authenticated user's pending deletion request.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.Deletion.API> {
+        Coder::Case(
+            Identity.Deletion.API.cases.request.prism, Identity.Deletion.API.cases.request.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment.request
+            Identity.Deletion.Request.router
+        }
 
-        public init() {}
+        Coder::Case(
+            Identity.Deletion.API.cases.cancel.prism, Identity.Deletion.API.cases.cancel.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment.cancel
+            HTTP.Method.post
+            HTTP.Segment.End()
+        }
 
-        /// The routing logic for identity deletion endpoints.
-        ///
-        /// Composes routes for all three deletion actions:
-        /// - Requesting deletion (with re-authentication)
-        /// - Canceling a pending deletion
-        /// - Confirming and executing deletion
-        ///
-        /// Each route enforces appropriate authentication and validation rules
-        /// to ensure secure identity deletion.
-        public var body: some URLRouting.Router<Identity.Deletion.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.Deletion.API.cases.request)) {
-                    Path<PathBuilder.Component<String>>.request
-                    Identity.Deletion.Request.Router()
-                }
-
-                URLRouting.Route(.case(Identity.Deletion.API.cases.cancel)) {
-                    Path.cancel
-                    Method.post
-                }
-
-                URLRouting.Route(.case(Identity.Deletion.API.cases.confirm)) {
-                    Path.confirm
-                    Method.post
-                }
-            }
+        Coder::Case(
+            Identity.Deletion.API.cases.confirm.prism, Identity.Deletion.API.cases.confirm.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment.confirm
+            HTTP.Method.post
+            HTTP.Segment.End()
         }
     }
 }

@@ -71,7 +71,7 @@ extension Identity.Email.Change.Client {
     ) async throws(Identity.Email.Change.Client.Error)
         -> Identity.Email.Change.Confirmation.Response
     {
-        return try await self.confirm(token: newEmail.rawValue)
+        return try await self.confirm(token: newEmail.address)
     }
 }
 

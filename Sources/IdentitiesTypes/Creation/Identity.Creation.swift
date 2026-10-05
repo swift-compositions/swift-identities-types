@@ -5,8 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 28/01/2025.
 //
 
+import Case_Macro
+import Coder
 import EmailAddress
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// Namespace for identity creation functionality within the Identity system.
@@ -18,16 +21,11 @@ extension Identity {
     /// This design ensures email ownership and reduces the creation of fraudulent identities.
     public struct Creation: @unchecked Sendable {
         public var client: Identity.Creation.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Creation.Route>
 
         public init(
-            client: Identity.Creation.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Creation.Route> = Identity
-                .Creation.Route
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.Creation.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }
@@ -85,7 +83,7 @@ extension Identity.Creation.Request {
         email: EmailAddress,
         password: String
     ) {
-        self.email = email.rawValue
+        self.email = email.address
         self.password = password
     }
 }
@@ -138,6 +136,6 @@ extension Identity.Creation.Verification {
         email: EmailAddress
     ) {
         self.token = token
-        self.email = email.rawValue
+        self.email = email.address
     }
 }

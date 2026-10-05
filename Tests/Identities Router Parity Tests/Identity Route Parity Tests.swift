@@ -9,10 +9,8 @@
 //  have their own corpora.
 //
 
-import Foundation
 import IdentitiesTypes
 import Testing
-import URL_Routing_Test_Support
 
 // Deterministic fixtures (no Date()/UUID(); single-entry collections only).
 enum Fixtures {
@@ -28,7 +26,7 @@ enum Fixtures {
         // swiftlint:disable:next force_try
         RFC_6750.Bearer(b64token: try! .init("parity-token-123"))
     }
-    static let router = Identity.Route.Router()
+    static let router = Identity.Route.self
 }
 
 @Suite("Identity Route Parity")
@@ -385,7 +383,7 @@ struct IdentityFacadeParity {
 
     /// The standalone `Identity.API.Router()` facade (no /api prefix).
     @Test func api() throws {
-        let router = Identity.API.Router()
+        let router = Identity.API.self
         let routes: [(name: String, route: Identity.API)] = [
             (
                 "authenticate.credentials",
@@ -416,7 +414,7 @@ struct IdentityFacadeParity {
 
     /// The standalone `Identity.View.Router()` facade.
     @Test func view() throws {
-        let router = Identity.View.Router()
+        let router = Identity.View.self
         let routes: [(name: String, route: Identity.View)] = [
             ("authenticate.credentials", .authenticate(.credentials)),
             ("create.request", .create(.request)),

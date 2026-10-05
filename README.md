@@ -38,7 +38,7 @@ Type-safe Swift definitions for identity authentication and management with depe
 - **Identity Deletion**: Request and confirm deletion with safety checks
 - **Reauthorization**: Token-based sensitive operation verification
 - **Multi-Factor Authentication**: TOTP, SMS, Email, WebAuthn, and backup codes
-- **Type-Safe Routing**: URLRouting integration for compile-time route validation
+- **Type-Safe Routing**: swift-http-router integration for compile-time route validation
 - **Dependency Injection**: Using swift-dependencies for testability
 
 This is a types-only package. For complete implementations, see the Related Packages section below.
@@ -241,30 +241,28 @@ try await identity.delete.request(
 
 ### Type-Safe URL Routing
 
-Generate and parse URLs with compile-time safety:
+Routes are `HTTP.Routable` types from [swift-http-router](https://github.com/swift-compositions/swift-http-router). Generate and parse requests with compile-time safety:
 
 ```swift
-@Dependency(\.identity.router) var router
-
-// Generate URL for login API
+// Generate the request for the login API
 let api: Identity.API = .authenticate(.credentials(
     .init(username: "user@example.com", password: "password123")
 ))
-let request = try router.request(for: .api(api))
+let request = try HTTP.request(Identity.Route.self, for: .api(api))
 // Produces: POST /api/authenticate
 
-// Generate URL for password reset view
-let viewRoute = Identity.Route.passwordReset
-let viewRequest = try router.request(for: viewRoute)
+// Generate the request for the password reset view
+let viewRequest = try HTTP.request(Identity.Route.self, for: .passwordReset)
 // Produces: GET /password/reset/request
 
-// Parse incoming request
-let match = try router.match(request: incomingRequest)
-if match.is(\.authenticate.api.credentials) {
-    let credentials = match.authenticate?.api?.credentials
+// Parse an incoming request
+let match = try HTTP.route(Identity.Route.self, incomingRequest)
+if case .authenticate(.api(.credentials(let credentials))) = match {
     // Handle credential authentication
 }
 ```
+
+Logout: `POST /logout` and `POST /logout/all` are the API routes; the redirecting view action is `POST /logout/view`. Earlier versions served the view at `/logout` without a method constraint.
 
 ### Multi-Factor Authentication (Optional)
 
@@ -330,8 +328,7 @@ The package follows a domain-first architecture where business capabilities are 
 Identity                              // Main namespace
 ├── authenticate: Authentication      // Authentication operations
 │   ├── client: Client               // Authentication client
-│   ├── token: Token.Client          // Token operations
-│   └── router: Router<Route>        // URL routing
+│   └── token: Token.Client          // Token operations
 ├── create: Creation                  // Identity creation
 ├── delete: Deletion                  // Identity deletion
 ├── email: Email                      // Email management
@@ -352,7 +349,7 @@ Identity                              // Main namespace
 
 Each domain contains:
 - **Client**: Operations interface using @DependencyClient
-- **Router**: Type-safe URL routing using URLRouting
+- **Router**: Type-safe routing as an `HTTP.Routable` conformance (swift-http-router)
 - **API**: API endpoint definitions
 - **Route**: Combined API and View routes
 - **Request/Response types**: Strongly-typed data models
@@ -363,7 +360,7 @@ All types are:
 - `Sendable` for Swift 6 strict concurrency
 - `Codable` for JSON serialization
 - `Equatable` for testing
-- Validated at compile-time with URLRouting
+- Routed through compile-time checked `HTTP.Routable` routers
 
 ## Requirements
 

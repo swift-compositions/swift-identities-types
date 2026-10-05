@@ -67,9 +67,9 @@ This is all you need to know to get started with `swift-identities`.
 
 [Dependencies](https://github.com/swift-compositions/swift-dependencies) is a dependency management library inspired by SwiftUI's "environment". This package uses Dependencies to provide different implementations of Client for use in tests.
 
-## What is URLRouting?
+## What is HTTP Router?
 
-[URLRouting](https://github.com/swift-compositions/swift-url-routing) is a bidirectional URL router with more type safety and less fuss. This package leverages URLRouting to parse URLRequest objects into our API types and generate URLs from them.
+[HTTP Router](https://github.com/swift-compositions/swift-http-router) is a bidirectional HTTP router built on the institute Coder stack. Each route type in this package conforms to `HTTP.Routable`, so `HTTP.route(_:_:)` parses an incoming request into it and `HTTP.request(_:for:)` generates the request for it.
 
 ## Topics
 

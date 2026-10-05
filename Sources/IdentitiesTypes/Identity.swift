@@ -1,12 +1,14 @@
-import Dependencies
 //
 //  Identity.swift
 //  swift-identities
 //
 //  Created by Coen ten Thije Boonkkamp on 31/01/2025.
 //
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import Dependencies
+import HTTP
+import HTTP_Router
 
 /// A namespace for managing identity and authentication in a client-server architecture.
 ///
@@ -63,8 +65,6 @@ public struct Identity: @unchecked Sendable {
     /// If nil, OAuth is not available
     public var oauth: Identity.OAuth?
 
-    public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Route>
-
     public init(
         authenticate: Identity.Authentication,
         logout: Identity.Logout,
@@ -75,9 +75,7 @@ public struct Identity: @unchecked Sendable {
         email: Identity.Email,
         password: Identity.Password,
         mfa: Identity.MFA? = nil,
-        oauth: Identity.OAuth? = nil,
-        router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Route> = Identity.Route
-            .Router().eraseToAnyParserPrinter()
+        oauth: Identity.OAuth? = nil
     ) {
         self.authenticate = authenticate
         self.logout = logout
@@ -88,7 +86,6 @@ public struct Identity: @unchecked Sendable {
         self.password = password
         self.mfa = mfa
         self.oauth = oauth
-        self.router = router
         self.require = require
     }
 }

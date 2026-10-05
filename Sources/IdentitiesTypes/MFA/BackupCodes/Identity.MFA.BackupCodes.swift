@@ -5,23 +5,20 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA {
     /// BackupCodes-specific types and operations.
     public struct BackupCodes: @unchecked Sendable {
         public var client: Identity.MFA.BackupCodes.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.BackupCodes.API>
 
         public init(
-            client: Identity.MFA.BackupCodes.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.BackupCodes.API> =
-                Identity.MFA.BackupCodes
-                .API
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.MFA.BackupCodes.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

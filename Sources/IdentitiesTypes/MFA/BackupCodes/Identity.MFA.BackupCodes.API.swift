@@ -5,12 +5,16 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import Dual
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA.BackupCodes {
     /// Backup code operations.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Regenerate backup codes
@@ -24,30 +28,35 @@ extension Identity.MFA.BackupCodes {
     }
 }
 
-extension Identity.MFA.BackupCodes.API {
+extension Identity.MFA.BackupCodes.API: HTTP.Routable {
     /// Router for BackupCodes endpoints.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.MFA.BackupCodes.API> {
+        Coder::Case(
+            Identity.MFA.BackupCodes.API.cases.regenerate.prism,
+            Identity.MFA.BackupCodes.API.cases.regenerate.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("regenerate")
+            HTTP.Segment.End()
+        }
 
-        public init() {}
+        Coder::Case(
+            Identity.MFA.BackupCodes.API.cases.verify.prism,
+            Identity.MFA.BackupCodes.API.cases.verify.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.verify
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.BackupCodes.Verify>())
+            HTTP.Segment.End()
+        }
 
-        public var body: some URLRouting.Router<Identity.MFA.BackupCodes.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.MFA.BackupCodes.API.cases.regenerate)) {
-                    Method.post
-                    Path { "regenerate" }
-                }
-
-                URLRouting.Route(.case(Identity.MFA.BackupCodes.API.cases.verify)) {
-                    Method.post
-                    Path.verify
-                    URLRouting.Body(coding: .json(Identity.MFA.BackupCodes.Verify.self))
-                }
-
-                URLRouting.Route(.case(Identity.MFA.BackupCodes.API.cases.remaining)) {
-                    Method.get
-                    Path { "remaining" }
-                }
-            }
+        Coder::Case(
+            Identity.MFA.BackupCodes.API.cases.remaining.prism,
+            Identity.MFA.BackupCodes.API.cases.remaining.fold, absent: .mismatch
+        ) {
+            HTTP.Method.get
+            HTTP.Segment("remaining")
+            HTTP.Segment.End()
         }
     }
 }

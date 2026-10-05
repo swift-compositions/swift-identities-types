@@ -5,9 +5,12 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 import JWT
 import RFC_6750
-import URLRouting
 
 extension Identity.Authentication {
     /// Types of authentication tokens supported by the system.

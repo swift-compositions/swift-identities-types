@@ -8,16 +8,15 @@
 import Dependencies
 import Dependencies_Test_Support
 import EmailAddress
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
 
-extension Identity.API.Router {
+extension Identity.API {
     @Suite
-    struct Test {
+    struct `API Router Tests` {
 
-        let router: Identity.API.Router = .init()
+        let router = Identity.API.self
 
         @Test
         func `Creates correct URL for authenticate credentials`() throws {
@@ -28,20 +27,22 @@ extension Identity.API.Router {
             )
 
             let request = try router.request(for: api)
-            #expect(request.url?.path == "/authenticate")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/authenticate")
+            #expect(request.method.rawValue == "POST")
 
             // Round-trip test
             let match = try router.match(request: request)
-            #expect(match.is(\.authenticate.credentials))
-            #expect(
-                Identity.API.cases.authenticate.credentials.extract(match)?.username
-                    == "user@example.com"
-            )
-            #expect(
-                Identity.API.cases.authenticate.credentials.extract(match)?.password
-                    == "password123"
-            )
+            #expect({ if case .authenticate(.credentials) = match { true } else { false } }())
+            if case .authenticate(.credentials(let value)) = match {
+                #expect(value.username == "user@example.com")
+            } else {
+                Issue.record("expected authenticate.credentials, got \(match)")
+            }
+            if case .authenticate(.credentials(let value)) = match {
+                #expect(value.password == "password123")
+            } else {
+                Issue.record("expected authenticate.credentials, got \(match)")
+            }
         }
 
         @Test
@@ -49,11 +50,11 @@ extension Identity.API.Router {
             let api: Identity.API = .logout(.current)
 
             let request = try router.request(for: api)
-            #expect(request.url?.path == "/logout")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/logout")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.logout.current))
+            #expect({ if case .logout(.current) = match { true } else { false } }())
         }
     }
 }

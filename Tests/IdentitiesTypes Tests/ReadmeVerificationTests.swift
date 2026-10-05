@@ -8,7 +8,6 @@
 
 import Dependencies
 import Dependencies_Test_Support
-import Foundation
 import JWT
 import Testing
 
@@ -334,7 +333,7 @@ extension Identity {
         @Test
         func `README lines 216-236: Type-safe URL routing`() throws {
             @Dependency(\.identity) var identity
-            let router = identity.router
+            let router = Identity.Route.self
 
             // Generate URL for login API
             let api: Identity.API = .authenticate(
@@ -343,19 +342,22 @@ extension Identity {
                 )
             )
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/authenticate")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/authenticate")
+            #expect(request.method.rawValue == "POST")
 
             // Generate URL for password reset view
             let viewRoute = Identity.Route.passwordReset
             let viewRequest = try router.request(for: viewRoute)
-            #expect(viewRequest.url?.path == "/password/reset/request")
+            #expect(viewRequest.path == "/password/reset/request")
 
             // Parse incoming request
             let match = try router.match(request: request)
-            #expect(match.is(\.authenticate.api.credentials))
-            let credentials = Identity.Route.cases.authenticate.api.credentials.extract(match)
-            #expect(credentials?.username == "user@example.com")
+            #expect({ if case .authenticate(.api(.credentials)) = match { true } else { false } }())
+            if case .authenticate(.api(.credentials(let credentials))) = match {
+                #expect(credentials.username == "user@example.com")
+            } else {
+                Issue.record("expected authenticate.api.credentials, got \(match)")
+            }
         }
 
         // MARK: - MFA Examples
@@ -373,7 +375,7 @@ extension Identity {
             let challenge = Identity.MFA.Challenge(
                 sessionToken: "session-token",
                 availableMethods: [.totp, .backupCode],
-                expiresAt: Date(),
+                expiresAt: now(),
                 attemptsRemaining: 3
             )
             #expect(challenge.sessionToken == "session-token")
@@ -475,11 +477,7 @@ extension Identity {
             #expect(response.refreshToken == "test-refresh-token")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(response)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Authentication.Response.self, from: data)
+            let decoded = try jsonRoundTrip(response)
 
             #expect(decoded == response)
         }
@@ -495,11 +493,7 @@ extension Identity {
             #expect(request.password == "password123")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Creation.Request.self, from: data)
+            let decoded = try jsonRoundTrip(request)
 
             #expect(decoded == request)
         }
@@ -515,11 +509,7 @@ extension Identity {
             #expect(verification.email == "verify@example.com")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(verification)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Creation.Verification.self, from: data)
+            let decoded = try jsonRoundTrip(verification)
 
             #expect(decoded == verification)
         }
@@ -533,11 +523,7 @@ extension Identity {
             #expect(request.email == "reset@example.com")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Password.Reset.Request.self, from: data)
+            let decoded = try jsonRoundTrip(request)
 
             #expect(decoded == request)
         }
@@ -553,11 +539,7 @@ extension Identity {
             #expect(confirm.newPassword == "newPassword123")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(confirm)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Password.Reset.Confirm.self, from: data)
+            let decoded = try jsonRoundTrip(confirm)
 
             #expect(decoded == confirm)
         }
@@ -573,11 +555,7 @@ extension Identity {
             #expect(request.newPassword == "new123")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Password.Change.Request.self, from: data)
+            let decoded = try jsonRoundTrip(request)
 
             #expect(decoded == request)
         }
@@ -591,11 +569,7 @@ extension Identity {
             #expect(request.newEmail == "newemail@example.com")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Email.Change.Request.self, from: data)
+            let decoded = try jsonRoundTrip(request)
 
             #expect(decoded == request)
         }
@@ -609,11 +583,7 @@ extension Identity {
             #expect(confirmation.token == "confirmation-token")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(confirmation)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Email.Change.Confirmation.self, from: data)
+            let decoded = try jsonRoundTrip(confirmation)
 
             #expect(decoded == confirmation)
         }
@@ -627,11 +597,7 @@ extension Identity {
             #expect(request.reauthToken == "reauth-token-123")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Deletion.Request.self, from: data)
+            let decoded = try jsonRoundTrip(request)
 
             #expect(decoded == request)
         }
@@ -645,11 +611,7 @@ extension Identity {
             #expect(request.password == "password123")
 
             // Test Codable conformance
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(Identity.Reauthorization.Request.self, from: data)
+            let decoded = try jsonRoundTrip(request)
 
             #expect(decoded == request)
         }

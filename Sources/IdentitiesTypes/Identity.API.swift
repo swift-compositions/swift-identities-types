@@ -5,8 +5,10 @@
 //  Created by Coen ten Thije Boonkkamp on 10/09/2024.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// A comprehensive set of identity management API endpoints.
@@ -35,6 +37,8 @@ extension Identity {
     ///   // Handle identity creation
     /// }
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Handles user authentication via credentials, tokens, or API keys
@@ -70,7 +74,7 @@ extension Identity.API {
     public static let logout: Self = .logout(.current)
 }
 
-extension Identity.API {
+extension Identity.API: HTTP.Routable {
     /// A type-safe router for mapping URLs to Identity API endpoints.
     ///
     /// The router uses parser-printer composition to define bidirectional mappings between
@@ -84,62 +88,68 @@ extension Identity.API {
     /// - Email operations: `/email/*`
     /// - MFA operations: `/mfa/*`
     /// - OAuth operations: `/oauth/*`
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.API> {
+        Coder::Case(
+            Identity.API.cases.authenticate.prism, Identity.API.cases.authenticate.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment.authenticate
+            Identity.Authentication.API.router
+        }
 
-        public init() {}
+        Coder::Case(
+            Identity.API.cases.reauthorize.prism, Identity.API.cases.reauthorize.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment.reauthorize
+            Identity.Reauthorization.API.router
+        }
 
-        /// The main routing logic composition.
-        ///
-        /// Routes are defined using the `OneOf` parser to match incoming requests
-        /// against all possible API endpoints. Each endpoint category has its own
-        /// sub-router that handles the specific routing logic.
-        public var body: some URLRouting.Router<Identity.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.API.cases.authenticate)) {
-                    Path.authenticate
-                    Identity.Authentication.API.Router()
-                }
+        Coder::Case(
+            Identity.API.cases.create.prism, Identity.API.cases.create.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.create
+            Identity.Creation.API.router
+        }
 
-                URLRouting.Route(.case(Identity.API.cases.reauthorize)) {
-                    Path.reauthorize
-                    Identity.Reauthorization.API.Router()
-                }
+        Coder::Case(
+            Identity.API.cases.delete.prism, Identity.API.cases.delete.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.delete
+            Identity.Deletion.API.router
+        }
 
-                URLRouting.Route(.case(Identity.API.cases.create)) {
-                    Path.create
-                    Identity.Creation.API.Router()
-                }
+        Coder::Case(
+            Identity.API.cases.logout.prism, Identity.API.cases.logout.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.logout
+            Identity.Logout.API.router
+        }
 
-                URLRouting.Route(.case(Identity.API.cases.delete)) {
-                    Path.delete
-                    Identity.Deletion.API.Router()
-                }
+        Coder::Case(
+            Identity.API.cases.email.prism, Identity.API.cases.email.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.email
+            Identity.Email.API.router
+        }
 
-                URLRouting.Route(.case(Identity.API.cases.logout)) {
-                    Path.logout
-                    Identity.Logout.API.Router()
-                }
+        Coder::Case(
+            Identity.API.cases.password.prism, Identity.API.cases.password.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.password
+            Identity.Password.API.router
+        }
 
-                URLRouting.Route(.case(Identity.API.cases.email)) {
-                    Path.email
-                    Identity.Email.API.Router()
-                }
+        Coder::Case(Identity.API.cases.mfa.prism, Identity.API.cases.mfa.fold, absent: .mismatch) {
+            HTTP.Segment.mfa
+            Identity.MFA.API.router
+        }
 
-                URLRouting.Route(.case(Identity.API.cases.password)) {
-                    Path.password
-                    Identity.Password.API.Router()
-                }
-
-                URLRouting.Route(.case(Identity.API.cases.mfa)) {
-                    Path.mfa
-                    Identity.MFA.API.Router()
-                }
-
-                URLRouting.Route(.case(Identity.API.cases.oauth)) {
-                    Path.oauth
-                    Identity.OAuth.API.Router()
-                }
-            }
+        Coder::Case(
+            Identity.API.cases.oauth.prism, Identity.API.cases.oauth.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.oauth
+            Identity.OAuth.API.router
         }
     }
 }

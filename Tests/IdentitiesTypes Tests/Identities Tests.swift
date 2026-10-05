@@ -8,7 +8,6 @@
 import Dependencies
 import Dependencies_Test_Support
 import EmailAddress
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
@@ -44,7 +43,10 @@ extension Identity.Authentication.Client {
 
                 @Dependency(\.identity) var identity
 
-                await #expect(throws: Identity._TestDatabase.TestError.invalidCredentials) {
+                await #expect(
+                    throws: Identity.Authentication.Client.Error.credentials(
+                        reason: "\(Identity._TestDatabase.TestError.invalidCredentials)")
+                ) {
                     try await identity.login(
                         username: "nonexistent@example.com",
                         password: "wrongpass"
@@ -127,7 +129,10 @@ extension Identity.Creation {
 
                 try await identity.create.request(email: email, password: "password123")
 
-                await #expect(throws: Identity._TestDatabase.TestError.invalidVerificationToken) {
+                await #expect(
+                    throws: Identity.Creation.Client.Error.verify(
+                        reason: "\(Identity._TestDatabase.TestError.invalidVerificationToken)")
+                ) {
                     try await identity.create.verify(email: email, token: "wrong-token")
                 }
 
@@ -144,7 +149,10 @@ extension Identity.Creation {
 
                 try await identity.create.request(email: email, password: "password123")
 
-                await #expect(throws: Identity._TestDatabase.TestError.emailAlreadyExists) {
+                await #expect(
+                    throws: Identity.Creation.Client.Error.request(
+                        reason: "\(Identity._TestDatabase.TestError.emailAlreadyExists)")
+                ) {
                     try await identity.create.request(email: email, password: "anotherpass")
                 }
             }
@@ -187,7 +195,10 @@ extension Identity.Password {
                 #expect(response.accessToken.isEmpty == false)
 
                 // Verify old password doesn't work
-                await #expect(throws: Identity._TestDatabase.TestError.invalidCredentials) {
+                await #expect(
+                    throws: Identity.Authentication.Client.Error.credentials(
+                        reason: "\(Identity._TestDatabase.TestError.invalidCredentials)")
+                ) {
                     _ = try await identity.login(username: email, password: initialPassword)
                 }
 
@@ -223,7 +234,10 @@ extension Identity.Password {
                 #expect(response.accessToken.isEmpty == false)
 
                 // Verify old password doesn't work
-                await #expect(throws: Identity._TestDatabase.TestError.invalidCredentials) {
+                await #expect(
+                    throws: Identity.Authentication.Client.Error.credentials(
+                        reason: "\(Identity._TestDatabase.TestError.invalidCredentials)")
+                ) {
                     _ = try await identity.login(username: email, password: currentPassword)
                 }
             }
@@ -235,7 +249,10 @@ extension Identity.Password {
 
                 @Dependency(\.identity) var identity
 
-                await #expect(throws: Identity._TestDatabase.TestError.invalidResetToken) {
+                await #expect(
+                    throws: Identity.Password.Reset.Client.Error.confirm(
+                        reason: "\(Identity._TestDatabase.TestError.invalidResetToken)")
+                ) {
                     try await identity.password.reset.confirm(
                         newPassword: "newpass",
                         token: "invalid-token"
@@ -285,7 +302,10 @@ extension Identity.Email.Change {
                 #expect(loginResponse.accessToken.isEmpty == false)
 
                 // Verify old email doesn't work
-                await #expect(throws: Identity._TestDatabase.TestError.invalidCredentials) {
+                await #expect(
+                    throws: Identity.Authentication.Client.Error.credentials(
+                        reason: "\(Identity._TestDatabase.TestError.invalidCredentials)")
+                ) {
                     _ = try await identity.login(username: oldEmail, password: password)
                 }
 

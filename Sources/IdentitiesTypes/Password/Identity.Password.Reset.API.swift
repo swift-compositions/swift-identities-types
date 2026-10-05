@@ -5,11 +5,15 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Password.Reset {
     /// Password reset API endpoints.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Request a password reset via email
@@ -20,22 +24,21 @@ extension Identity.Password.Reset {
     }
 }
 
-extension Identity.Password.Reset.API {
+extension Identity.Password.Reset.API: HTTP.Routable {
     /// Router for password reset endpoints.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.Password.Reset.API> {
+        Coder::Case(
+            Identity.Password.Reset.API.cases.request.prism,
+            Identity.Password.Reset.API.cases.request.fold, absent: .mismatch
+        ) {
+            Identity.Password.Reset.Request.router
+        }
 
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Password.Reset.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.Password.Reset.API.cases.request)) {
-                    Identity.Password.Reset.Request.Router()
-                }
-
-                URLRouting.Route(.case(Identity.Password.Reset.API.cases.confirm)) {
-                    Identity.Password.Reset.Confirm.Router()
-                }
-            }
+        Coder::Case(
+            Identity.Password.Reset.API.cases.confirm.prism,
+            Identity.Password.Reset.API.cases.confirm.fold, absent: .mismatch
+        ) {
+            Identity.Password.Reset.Confirm.router
         }
     }
 }

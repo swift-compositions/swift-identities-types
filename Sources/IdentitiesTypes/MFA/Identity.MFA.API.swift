@@ -5,9 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import Dual
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA {
     /// Multi-factor authentication API endpoints.
@@ -21,6 +23,8 @@ extension Identity.MFA {
     /// - General MFA status
     ///
     /// Each MFA method can be independently configured and used.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// TOTP-based authentication operations
@@ -46,49 +50,60 @@ extension Identity.MFA {
     }
 }
 
-extension Identity.MFA.API {
+extension Identity.MFA.API: HTTP.Routable {
     /// Router for MFA API endpoints.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.MFA.API> {
+        Coder::Case(
+            Identity.MFA.API.cases.totp.prism, Identity.MFA.API.cases.totp.fold, absent: .mismatch
+        ) {
+            HTTP.Segment("totp")
+            Identity.MFA.TOTP.API.router
+        }
 
-        public init() {}
+        Coder::Case(
+            Identity.MFA.API.cases.sms.prism, Identity.MFA.API.cases.sms.fold, absent: .mismatch
+        ) {
+            HTTP.Segment("sms")
+            Identity.MFA.SMS.API.router
+        }
 
-        public var body: some URLRouting.Router<Identity.MFA.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.MFA.API.cases.totp)) {
-                    Path { "totp" }
-                    Identity.MFA.TOTP.API.Router()
-                }
+        Coder::Case(
+            Identity.MFA.API.cases.email.prism, Identity.MFA.API.cases.email.fold, absent: .mismatch
+        ) {
+            HTTP.Segment("email")
+            Identity.MFA.Email.API.router
+        }
 
-                URLRouting.Route(.case(Identity.MFA.API.cases.sms)) {
-                    Path { "sms" }
-                    Identity.MFA.SMS.API.Router()
-                }
+        Coder::Case(
+            Identity.MFA.API.cases.webauthn.prism, Identity.MFA.API.cases.webauthn.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("webauthn")
+            Identity.MFA.WebAuthn.API.router
+        }
 
-                URLRouting.Route(.case(Identity.MFA.API.cases.email)) {
-                    Path { "email" }
-                    Identity.MFA.Email.API.Router()
-                }
+        Coder::Case(
+            Identity.MFA.API.cases.backupCodes.prism, Identity.MFA.API.cases.backupCodes.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("backup-codes")
+            Identity.MFA.BackupCodes.API.router
+        }
 
-                URLRouting.Route(.case(Identity.MFA.API.cases.webauthn)) {
-                    Path { "webauthn" }
-                    Identity.MFA.WebAuthn.API.Router()
-                }
+        Coder::Case(
+            Identity.MFA.API.cases.status.prism, Identity.MFA.API.cases.status.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("status")
+            Identity.MFA.Status.API.router
+        }
 
-                URLRouting.Route(.case(Identity.MFA.API.cases.backupCodes)) {
-                    Path { "backup-codes" }
-                    Identity.MFA.BackupCodes.API.Router()
-                }
-
-                URLRouting.Route(.case(Identity.MFA.API.cases.status)) {
-                    Path { "status" }
-                    Identity.MFA.Status.API.Router()
-                }
-
-                URLRouting.Route(.case(Identity.MFA.API.cases.verify)) {
-                    Path { "verify" }
-                    Identity.MFA.Verify.Router()
-                }
-            }
+        Coder::Case(
+            Identity.MFA.API.cases.verify.prism, Identity.MFA.API.cases.verify.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("verify")
+            Identity.MFA.Verify.router
         }
     }
 }

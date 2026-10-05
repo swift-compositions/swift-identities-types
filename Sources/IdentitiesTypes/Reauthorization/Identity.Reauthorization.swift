@@ -5,8 +5,10 @@
 //  Created by Coen ten Thije Boonkkamp on 05/02/2025.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// Namespace for reauthorization functionality within the Identity system.
@@ -16,45 +18,36 @@ extension Identity {
 
     public struct Reauthorization: @unchecked Sendable {
         public var client: Identity.Reauthorization.Client
-        public var router:
-            AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Reauthorization.Route>
 
         public init(
-            client: Identity.Reauthorization.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Reauthorization.Route> =
-                Identity.Reauthorization
-                .Route
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.Reauthorization.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }
 
 extension Identity.Reauthorization {
+    @Prisms
+    @Folds
     @Cases
     public enum Route: Sendable, Equatable {
         case api(Identity.Reauthorization.API)
     }
 }
 
-extension Identity.Reauthorization.Route {
+extension Identity.Reauthorization.Route: HTTP.Routable {
     /// Routes reauthorization requests to their appropriate handlers.
     ///
     /// Handles reauthorization endpoint for sensitive operations.
-    public struct Router: ParserPrinter, Sendable {
-
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Reauthorization.Route> {
-            OneOf {
-                URLRouting.Route(.case(Identity.Reauthorization.Route.cases.api)) {
-                    Path.api
-                    Path.reauthorize
-                    Identity.Reauthorization.API.Router()
-                }
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Reauthorization.Route> {
+        Coder::Case(
+            Identity.Reauthorization.Route.cases.api.prism,
+            Identity.Reauthorization.Route.cases.api.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.api
+            HTTP.Segment.reauthorize
+            Identity.Reauthorization.API.router
         }
     }
 }

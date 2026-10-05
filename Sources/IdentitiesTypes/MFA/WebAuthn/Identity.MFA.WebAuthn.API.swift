@@ -5,12 +5,16 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import Dual
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA.WebAuthn {
     /// WebAuthn/FIDO2 authentication operations.
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Initialize WebAuthn registration
@@ -36,58 +40,79 @@ extension Identity.MFA.WebAuthn {
     }
 }
 
-extension Identity.MFA.WebAuthn.API {
+extension Identity.MFA.WebAuthn.API: HTTP.Routable {
     /// Router for WebAuthn endpoints.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.MFA.WebAuthn.API> {
+        Coder::Case(
+            Identity.MFA.WebAuthn.API.cases.beginRegistration.prism,
+            Identity.MFA.WebAuthn.API.cases.beginRegistration.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("register")
+            HTTP.Segment("begin")
+            HTTP.Segment.End()
+        }
 
-        public init() {}
+        Coder::Case(
+            Identity.MFA.WebAuthn.API.cases.finishRegistration.prism,
+            Identity.MFA.WebAuthn.API.cases.finishRegistration.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("register")
+            HTTP.Segment("finish")
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.WebAuthn.FinishRegistration>())
+            HTTP.Segment.End()
+        }
 
-        public var body: some URLRouting.Router<Identity.MFA.WebAuthn.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.MFA.WebAuthn.API.cases.beginRegistration)) {
-                    Method.post
-                    Path { "register" }
-                    Path { "begin" }
-                }
+        Coder::Case(
+            Identity.MFA.WebAuthn.API.cases.beginAuthentication.prism,
+            Identity.MFA.WebAuthn.API.cases.beginAuthentication.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("authenticate")
+            HTTP.Segment("begin")
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.WebAuthn.API.cases.finishRegistration)) {
-                    Method.post
-                    Path { "register" }
-                    Path { "finish" }
-                    URLRouting.Body(coding: .json(Identity.MFA.WebAuthn.FinishRegistration.self))
-                }
+        Coder::Case(
+            Identity.MFA.WebAuthn.API.cases.finishAuthentication.prism,
+            Identity.MFA.WebAuthn.API.cases.finishAuthentication.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("authenticate")
+            HTTP.Segment("finish")
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.WebAuthn.FinishAuthentication>())
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.WebAuthn.API.cases.beginAuthentication)) {
-                    Method.post
-                    Path { "authenticate" }
-                    Path { "begin" }
-                }
+        Coder::Case(
+            Identity.MFA.WebAuthn.API.cases.listCredentials.prism,
+            Identity.MFA.WebAuthn.API.cases.listCredentials.fold, absent: .mismatch
+        ) {
+            HTTP.Method.get
+            HTTP.Segment("credentials")
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.WebAuthn.API.cases.finishAuthentication)) {
-                    Method.post
-                    Path { "authenticate" }
-                    Path { "finish" }
-                    URLRouting.Body(coding: .json(Identity.MFA.WebAuthn.FinishAuthentication.self))
-                }
+        Coder::Case(
+            Identity.MFA.WebAuthn.API.cases.removeCredential.prism,
+            Identity.MFA.WebAuthn.API.cases.removeCredential.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment("credentials")
+            HTTP.Segment("remove")
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.WebAuthn.RemoveCredential>())
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.MFA.WebAuthn.API.cases.listCredentials)) {
-                    Method.get
-                    Path { "credentials" }
-                }
-
-                URLRouting.Route(.case(Identity.MFA.WebAuthn.API.cases.removeCredential)) {
-                    Method.post
-                    Path { "credentials" }
-                    Path { "remove" }
-                    URLRouting.Body(coding: .json(Identity.MFA.WebAuthn.RemoveCredential.self))
-                }
-
-                URLRouting.Route(.case(Identity.MFA.WebAuthn.API.cases.disable)) {
-                    Method.post
-                    Path.disable
-                    URLRouting.Body(coding: .json(Identity.MFA.DisableRequest.self))
-                }
-            }
+        Coder::Case(
+            Identity.MFA.WebAuthn.API.cases.disable.prism,
+            Identity.MFA.WebAuthn.API.cases.disable.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.disable
+            HTTP.Body.Coded(HTTP.Body.JSON<Identity.MFA.DisableRequest>())
+            HTTP.Segment.End()
         }
     }
 }

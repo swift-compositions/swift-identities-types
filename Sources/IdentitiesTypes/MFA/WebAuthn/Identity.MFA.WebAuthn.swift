@@ -5,23 +5,21 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA {
     /// WebAuthn-specific types and operations.
     public struct WebAuthn: @unchecked Sendable {
         public var client: Identity.MFA.WebAuthn.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.WebAuthn.API>
 
         public init(
-            client: Identity.MFA.WebAuthn.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.WebAuthn.API> =
-                Identity.MFA.WebAuthn.API
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.MFA.WebAuthn.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

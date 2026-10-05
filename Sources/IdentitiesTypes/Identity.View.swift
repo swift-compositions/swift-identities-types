@@ -5,8 +5,10 @@
 //  Created by Coen ten Thije Boonkkamp on 07/10/2024.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// View routing and navigation states for the identity consumer interface.
@@ -17,6 +19,8 @@ extension Identity {
     /// - Account creation and verification
     /// - Profile management (email, password)
     /// - Account deletion
+    @Prisms
+    @Folds
     @Cases
     public enum View: Equatable, Sendable {
         case authenticate(Identity.Authentication.View)
@@ -39,68 +43,73 @@ extension Identity.View {
 // the feature-based types directly (Identity.Authentication.View, Identity.Creation.View, etc.)
 // These are defined in their respective feature modules.
 
-extension Identity.View {
+extension Identity.View: HTTP.Routable {
     /// URL router for mapping between URLs and view states.
     ///
     /// This router handles bidirectional conversion between URLs and view states,
     /// defining the client-side routing structure for all identity management flows.
-    public struct Router: ParserPrinter {
+    public static var router: some HTTP.Router.`Protocol`<Identity.View> {
 
-        public init() {}
+        Coder::Case(
+            Identity.View.cases.create.prism, Identity.View.cases.create.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.create
+            // Delegate to the feature's view router
+            Identity.Creation.View.router
+        }
 
-        /// The routing configuration for all view states.
-        ///
-        /// Defines URL patterns for each view state:
-        /// - /create/* - Account creation flows
-        /// - /login, /credentials - Authentication
-        /// - /password/* - Password management
-        /// - /email/* - Email management
-        public var body: some URLRouting.Router<Identity.View> {
-            OneOf {
+        Coder::Case(
+            Identity.View.cases.logout.prism, Identity.View.cases.logout.fold, absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.logout
+            HTTP.Segment("view")
+            HTTP.Segment.End()
+        }
 
-                URLRouting.Route(.case(Identity.View.cases.create)) {
-                    Path.create
-                    // Delegate to the feature's view router
-                    Identity.Creation.View.Router()
-                }
+        Coder::Case(
+            Identity.View.cases.delete.prism, Identity.View.cases.delete.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.delete
+            Identity.Deletion.View.router
+        }
 
-                URLRouting.Route(.case(Identity.View.cases.logout)) {
-                    Path.logout
-                }
+        Coder::Case(
+            Identity.View.cases.password.prism, Identity.View.cases.password.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.password
+            // Delegate to the feature's view router
+            Identity.Password.View.router
+        }
 
-                URLRouting.Route(.case(Identity.View.cases.delete)) {
-                    Path.delete
-                    Identity.Deletion.View.Router()
-                }
+        Coder::Case(
+            Identity.View.cases.email.prism, Identity.View.cases.email.fold, absent: .mismatch
+        ) {
+            HTTP.Segment.email
+            // Delegate to the feature's view router
+            Identity.Email.View.router
+        }
 
-                URLRouting.Route(.case(Identity.View.cases.password)) {
-                    Path.password
-                    // Delegate to the feature's view router
-                    Identity.Password.View.Router()
-                }
+        Coder::Case(Identity.View.cases.mfa.prism, Identity.View.cases.mfa.fold, absent: .mismatch)
+        {
+            HTTP.Segment("mfa")
+            // Delegate to the feature's view router
+            Identity.MFA.View.router
+        }
 
-                URLRouting.Route(.case(Identity.View.cases.email)) {
-                    Path.email
-                    // Delegate to the feature's view router
-                    Identity.Email.View.Router()
-                }
+        Coder::Case(
+            Identity.View.cases.oauth.prism, Identity.View.cases.oauth.fold, absent: .mismatch
+        ) {
+            // Delegate to the feature's view router
+            Identity.View.OAuth.router
+        }
 
-                URLRouting.Route(.case(Identity.View.cases.mfa)) {
-                    Path { "mfa" }
-                    // Delegate to the feature's view router
-                    Identity.MFA.View.Router()
-                }
-
-                URLRouting.Route(.case(Identity.View.cases.oauth)) {
-                    // Delegate to the feature's view router
-                    Identity.View.OAuth.Router()
-                }
-
-                URLRouting.Route(.case(Identity.View.cases.authenticate)) {
-                    // Delegate to the feature's view router
-                    Identity.Authentication.View.Router()
-                }
-            }
+        Coder::Case(
+            Identity.View.cases.authenticate.prism, Identity.View.cases.authenticate.fold,
+            absent: .mismatch
+        ) {
+            // Delegate to the feature's view router
+            Identity.Authentication.View.router
         }
     }
 }

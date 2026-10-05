@@ -5,7 +5,6 @@
 //  Created by Coen ten Thije Boonkkamp on 20/02/2025.
 //
 
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
@@ -15,7 +14,7 @@ struct `Working Router Test` {
 
     @Test
     func `Basic router test`() throws {
-        let router = Identity.API.Router()
+        let router = Identity.API.self
 
         // Create a simple API request
         let api: Identity.API = .logout(.current)
@@ -24,13 +23,13 @@ struct `Working Router Test` {
         let request = try router.request(for: api)
 
         // Check URL path
-        #expect(request.url?.path == "/logout")
+        #expect(request.path == "/logout")
 
         // Check method
-        #expect(request.httpMethod == "POST")
+        #expect(request.method.rawValue == "POST")
 
         // Round-trip test
         let match = try router.match(request: request)
-        #expect(match.is(\.logout.current))
+        #expect({ if case .logout(.current) = match { true } else { false } }())
     }
 }

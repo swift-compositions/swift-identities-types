@@ -17,9 +17,9 @@ extension Identity._TestDatabase {
         ) async throws(Failure) {
             if enabled {
                 let database = Identity._TestDatabase()
-                try await withDependencies {
-                    $0[Identity._TestDatabase.self] = database
-                    $0[Identity.self] = .testValue
+                try await withDependencies { (values: inout __DependencyValues) throws(Failure) in
+                    values[Identity._TestDatabase.self] = database
+                    values[Identity.self] = .testValue
                 } operation: { () async throws(Failure) in
                     try await operation()
                 }

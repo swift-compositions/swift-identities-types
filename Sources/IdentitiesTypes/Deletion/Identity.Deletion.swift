@@ -5,7 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 28/01/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// Namespace for identity deletion functionality within the Identity system.
@@ -16,16 +20,11 @@ extension Identity {
     /// 3. The ability to cancel a pending deletion
     public struct Deletion: @unchecked Sendable {
         public var client: Identity.Deletion.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Deletion.Route>
 
         public init(
-            client: Identity.Deletion.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Deletion.Route> = Identity
-                .Deletion.Route
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.Deletion.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }
@@ -68,22 +67,18 @@ extension Identity.Deletion {
     }
 }
 
-extension Identity.Deletion.Request {
+extension Identity.Deletion.Request: HTTP.Routable {
     /// Router for handling identity deletion request endpoints.
     ///
     /// Routes POST requests with form-encoded body containing the reauthorization token.
     /// The router does not specify a path component as it's configured at a higher level
     /// in the routing hierarchy.
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Deletion.Request> {
-            // Route-level wrap (W3): collapses the Skip-chain's `Either` failure into
-            // `RFC_3986.URI.Routing.Error` (url-routing FormBodyRouteTests pattern).
-            URLRouting.Route(.identity()) {
-                Method.post
-                URLRouting.Body(coding: .form(Identity.Deletion.Request.self, decoder: .identities))
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Deletion.Request> {
+        Coder::Coder(HTTP.Router.Request.self, HTTP.Router.Request.self) {
+            HTTP.Method.post
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(Identity.Deletion.Request.self, decoder: .identities))
+            HTTP.Segment.End()
         }
     }
 }

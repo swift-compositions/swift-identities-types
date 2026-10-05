@@ -5,8 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTTP
+import HTTP_Router
 
 extension Identity {
     /// Namespace for MFA-related functionality within the Identity system.
@@ -17,7 +20,6 @@ extension Identity {
         public var webauthn: Identity.MFA.WebAuthn
         public var backupCodes: Identity.MFA.BackupCodes
         public var status: Identity.MFA.Status
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.Route>
 
         public init(
             totp: Identity.MFA.TOTP,
@@ -25,9 +27,7 @@ extension Identity {
             email: Identity.MFA.Email,
             webauthn: Identity.MFA.WebAuthn,
             backupCodes: Identity.MFA.BackupCodes,
-            status: Identity.MFA.Status,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.Route> = Identity.MFA
-                .Route.Router().eraseToAnyParserPrinter()
+            status: Identity.MFA.Status
         ) {
             self.totp = totp
             self.sms = sms
@@ -35,7 +35,6 @@ extension Identity {
             self.webauthn = webauthn
             self.backupCodes = backupCodes
             self.status = status
-            self.router = router
         }
     }
 }

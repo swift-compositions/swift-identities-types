@@ -8,7 +8,6 @@
 import Dependencies
 import Dependencies_Test_Support
 import EmailAddress
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
@@ -46,11 +45,7 @@ extension Identity.Creation.Request {
                 password: "securePass123"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decodedRequest = try decoder.decode(Identity.Creation.Request.self, from: data)
+            let decodedRequest = try jsonRoundTrip(request)
 
             #expect(decodedRequest.email == request.email)
             #expect(decodedRequest.password == request.password)
@@ -64,14 +59,7 @@ extension Identity.Creation.Request {
                 email: "verify@example.com"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(verification)
-
-            let decoder = JSONDecoder()
-            let decodedVerification = try decoder.decode(
-                Identity.Creation.Verification.self,
-                from: data
-            )
+            let decodedVerification = try jsonRoundTrip(verification)
 
             #expect(decodedVerification.email == verification.email)
             #expect(decodedVerification.token == verification.token)
@@ -113,14 +101,7 @@ extension Identity.Password.Change {
                 newPassword: "newSecurePass"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(confirmation)
-
-            let decoder = JSONDecoder()
-            let decodedConfirmation = try decoder.decode(
-                Identity.Password.Reset.Confirm.self,
-                from: data
-            )
+            let decodedConfirmation = try jsonRoundTrip(confirmation)
 
             #expect(decodedConfirmation.newPassword == confirmation.newPassword)
             #expect(decodedConfirmation.token == confirmation.token)
@@ -134,14 +115,7 @@ extension Identity.Password.Change {
                 newPassword: "newPass"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(changeRequest)
-
-            let decoder = JSONDecoder()
-            let decodedRequest = try decoder.decode(
-                Identity.Password.Change.Request.self,
-                from: data
-            )
+            let decodedRequest = try jsonRoundTrip(changeRequest)
 
             #expect(decodedRequest.currentPassword == changeRequest.currentPassword)
             #expect(decodedRequest.newPassword == changeRequest.newPassword)
@@ -171,11 +145,7 @@ extension Identity.Deletion {
                 reauthToken: "reauth-token-456"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decodedRequest = try decoder.decode(Identity.Deletion.Request.self, from: data)
+            let decodedRequest = try jsonRoundTrip(request)
 
             #expect(decodedRequest.reauthToken == request.reauthToken)
             #expect(decodedRequest == request)
@@ -200,14 +170,7 @@ extension Identity.Reauthorization {
         func `Reauthorization request encoding and decoding`() throws {
             let request = Identity.Reauthorization.Request(password: "securePassword")
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(request)
-
-            let decoder = JSONDecoder()
-            let decodedRequest = try decoder.decode(
-                Identity.Reauthorization.Request.self,
-                from: data
-            )
+            let decodedRequest = try jsonRoundTrip(request)
 
             #expect(decodedRequest.password == request.password)
             #expect(decodedRequest == request)
@@ -221,9 +184,8 @@ extension Identity.MFA {
 
         @Test
         func `Creates TOTP setup response`() throws {
-            let qrCodeURL = URL(
-                string:
-                    "otpauth://totp/Example:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Example"
+            let qrCodeURL = url(
+                "otpauth://totp/Example:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Example"
             )!
             let response = Identity.MFA.TOTP.SetupResponse(
                 secret: "JBSWY3DPEHPK3PXP",
@@ -238,21 +200,14 @@ extension Identity.MFA {
 
         @Test
         func `TOTP setup response encoding and decoding`() throws {
-            let qrCodeURL = URL(string: "otpauth://totp/Test:test@example.com")!
+            let qrCodeURL = url("otpauth://totp/Test:test@example.com")!
             let response = Identity.MFA.TOTP.SetupResponse(
                 secret: "SECRET123",
                 qrCodeURL: qrCodeURL,
                 manualEntryKey: "SECR ET12 3"
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(response)
-
-            let decoder = JSONDecoder()
-            let decodedResponse = try decoder.decode(
-                Identity.MFA.TOTP.SetupResponse.self,
-                from: data
-            )
+            let decodedResponse = try jsonRoundTrip(response)
 
             #expect(decodedResponse.secret == response.secret)
             #expect(decodedResponse.qrCodeURL == response.qrCodeURL)
@@ -296,11 +251,7 @@ extension Identity.MFA {
                 isRequired: false
             )
 
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(status)
-
-            let decoder = JSONDecoder()
-            let decodedStatus = try decoder.decode(Identity.MFA.Status.Response.self, from: data)
+            let decodedStatus = try jsonRoundTrip(status)
 
             #expect(decodedStatus.configured.totp == status.configured.totp)
             #expect(decodedStatus.configured.sms == status.configured.sms)

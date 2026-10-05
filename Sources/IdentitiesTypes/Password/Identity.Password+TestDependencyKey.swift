@@ -7,6 +7,7 @@
 
 import Dependencies
 import EmailAddress
+import RFC_6531
 
 extension Identity.Password: Dependency.Key.Test {
     public static var testValue: Self {
@@ -25,7 +26,7 @@ extension Identity.Password.Reset: Dependency.Key.Test {
             client: .init(
                 request: { email throws(Identity.Password.Reset.Client.Error) in
                     do {
-                        _ = try EmailAddress(email)
+                        _ = EmailAddress(rfc6531: try RFC_6531.Mailbox(email))
                         _ = try await database.initiatePasswordReset(email: email)
                     } catch {
                         throw Identity.Password.Reset.Client.Error.request(reason: "\(error)")
@@ -41,8 +42,7 @@ extension Identity.Password.Reset: Dependency.Key.Test {
                         throw Identity.Password.Reset.Client.Error.confirm(reason: "\(error)")
                     }
                 }
-            ),
-            router: Identity.Password.Reset.API.Router().eraseToAnyParserPrinter()
+            )
         )
     }
 }
@@ -70,8 +70,7 @@ extension Identity.Password.Change: Dependency.Key.Test {
                         throw Identity.Password.Change.Client.Error.request(reason: "\(error)")
                     }
                 }
-            ),
-            router: Identity.Password.Change.API.Router().eraseToAnyParserPrinter()
+            )
         )
     }
 }

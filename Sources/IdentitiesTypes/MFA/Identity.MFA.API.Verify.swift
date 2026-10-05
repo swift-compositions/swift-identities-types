@@ -5,8 +5,12 @@
 //  Created by Coen ten Thije Boonkkamp on 21/08/2025.
 //
 
+import Case_Macro
+import Coder
 import Foundation
-import URLRouting
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA {
     /// General MFA verification request during login.
@@ -36,19 +40,13 @@ extension Identity.MFA {
     }
 }
 
-extension Identity.MFA.Verify {
+extension Identity.MFA.Verify: HTTP.Routable {
     /// Router for the MFA verify endpoint.
-    public struct Router: ParserPrinter, Sendable {
-
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.MFA.Verify> {
-            // Route-level wrap (W3): collapses the Skip-chain's `Either` failure into
-            // `RFC_3986.URI.Routing.Error` (url-routing FormBodyRouteTests pattern).
-            URLRouting.Route(.identity()) {
-                Method.post
-                URLRouting.Body(coding: .form(Identity.MFA.Verify.self, decoder: .identities))
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.MFA.Verify> {
+        Coder::Coder(HTTP.Router.Request.self, HTTP.Router.Request.self) {
+            HTTP.Method.post
+            HTTP.Body.Coded(HTML.Form.Coder.Value(Identity.MFA.Verify.self, decoder: .identities))
+            HTTP.Segment.End()
         }
     }
 }

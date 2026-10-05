@@ -8,7 +8,6 @@
 import Dependencies
 import Dependencies_Test_Support
 import EmailAddress
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
@@ -17,10 +16,7 @@ extension Identity.Route {
     @Suite(.dependencies)
     struct Test {
 
-        var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.Route> {
-            @Dependency(\.identity) var identity
-            return identity.router
-        }
+        let router = Identity.Route.self
 
         @Test
         func `Creates correct URL for authenticate credentials`() throws {
@@ -31,19 +27,21 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/authenticate")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/authenticate")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.authenticate.api.credentials))
-            #expect(
-                Identity.Route.cases.authenticate.api.credentials.extract(match)?.username
-                    == "user@example.com"
-            )
-            #expect(
-                Identity.Route.cases.authenticate.api.credentials.extract(match)?.password
-                    == "password123"
-            )
+            #expect({ if case .authenticate(.api(.credentials)) = match { true } else { false } }())
+            if case .authenticate(.api(.credentials(let value))) = match {
+                #expect(value.username == "user@example.com")
+            } else {
+                Issue.record("expected authenticate.api.credentials, got \(match)")
+            }
+            if case .authenticate(.api(.credentials(let value))) = match {
+                #expect(value.password == "password123")
+            } else {
+                Issue.record("expected authenticate.api.credentials, got \(match)")
+            }
         }
 
         @Test
@@ -51,13 +49,15 @@ extension Identity.Route {
             let api: Identity.API = .authenticate(.apiKey(try .init(token: "test-api-key")))
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/authenticate/api-key")
+            #expect(request.path == "/api/authenticate/api-key")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.authenticate.api.apiKey))
-            #expect(
-                Identity.Route.cases.authenticate.api.apiKey.extract(match)?.token == "test-api-key"
-            )
+            #expect({ if case .authenticate(.api(.apiKey)) = match { true } else { false } }())
+            if case .authenticate(.api(.apiKey(let value))) = match {
+                #expect(value.token == "test-api-key")
+            } else {
+                Issue.record("expected authenticate.api.apiKey, got \(match)")
+            }
         }
 
         @Test
@@ -69,17 +69,21 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/create/request")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/create/request")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.create.api.request))
-            #expect(
-                Identity.Route.cases.create.api.request.extract(match)?.email == "new@example.com"
-            )
-            #expect(
-                Identity.Route.cases.create.api.request.extract(match)?.password == "password123"
-            )
+            #expect({ if case .create(.api(.request)) = match { true } else { false } }())
+            if case .create(.api(.request(let value))) = match {
+                #expect(value.email == "new@example.com")
+            } else {
+                Issue.record("expected create.api.request, got \(match)")
+            }
+            if case .create(.api(.request(let value))) = match {
+                #expect(value.password == "password123")
+            } else {
+                Issue.record("expected create.api.request, got \(match)")
+            }
         }
 
         @Test
@@ -91,17 +95,21 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/create/verify")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/create/verify")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.create.api.verify))
-            #expect(
-                Identity.Route.cases.create.api.verify.extract(match)?.email == "verify@example.com"
-            )
-            #expect(
-                Identity.Route.cases.create.api.verify.extract(match)?.token == "verification-token"
-            )
+            #expect({ if case .create(.api(.verify)) = match { true } else { false } }())
+            if case .create(.api(.verify(let value))) = match {
+                #expect(value.email == "verify@example.com")
+            } else {
+                Issue.record("expected create.api.verify, got \(match)")
+            }
+            if case .create(.api(.verify(let value))) = match {
+                #expect(value.token == "verification-token")
+            } else {
+                Issue.record("expected create.api.verify, got \(match)")
+            }
         }
 
         @Test
@@ -115,15 +123,16 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/password/reset/request")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/password/reset/request")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.password.api.reset.request))
-            #expect(
-                Identity.Route.cases.password.api.reset.request.extract(match)?.email
-                    == "reset@example.com"
-            )
+            #expect({ if case .password(.api(.reset(.request))) = match { true } else { false } }())
+            if case .password(.api(.reset(.request(let value)))) = match {
+                #expect(value.email == "reset@example.com")
+            } else {
+                Issue.record("expected password.api.reset.request, got \(match)")
+            }
         }
 
         @Test
@@ -137,19 +146,21 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/password/reset/confirm")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/password/reset/confirm")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.password.api.reset.confirm))
-            #expect(
-                Identity.Route.cases.password.api.reset.confirm.extract(match)?.newPassword
-                    == "newPassword123"
-            )
-            #expect(
-                Identity.Route.cases.password.api.reset.confirm.extract(match)?.token
-                    == "reset-token"
-            )
+            #expect({ if case .password(.api(.reset(.confirm))) = match { true } else { false } }())
+            if case .password(.api(.reset(.confirm(let value)))) = match {
+                #expect(value.newPassword == "newPassword123")
+            } else {
+                Issue.record("expected password.api.reset.confirm, got \(match)")
+            }
+            if case .password(.api(.reset(.confirm(let value)))) = match {
+                #expect(value.token == "reset-token")
+            } else {
+                Issue.record("expected password.api.reset.confirm, got \(match)")
+            }
         }
 
         @Test
@@ -163,19 +174,22 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/password/change/request")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/password/change/request")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.password.api.change.request))
             #expect(
-                Identity.Route.cases.password.api.change.request.extract(match)?.currentPassword
-                    == "current123"
-            )
-            #expect(
-                Identity.Route.cases.password.api.change.request.extract(match)?.newPassword
-                    == "new123"
-            )
+                { if case .password(.api(.change(.request))) = match { true } else { false } }())
+            if case .password(.api(.change(.request(let value)))) = match {
+                #expect(value.currentPassword == "current123")
+            } else {
+                Issue.record("expected password.api.change.request, got \(match)")
+            }
+            if case .password(.api(.change(.request(let value)))) = match {
+                #expect(value.newPassword == "new123")
+            } else {
+                Issue.record("expected password.api.change.request, got \(match)")
+            }
         }
 
         @Test
@@ -189,15 +203,16 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/email/request")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/email/request")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.email.api.change.request))
-            #expect(
-                Identity.Route.cases.email.api.change.request.extract(match)?.newEmail
-                    == "newemail@example.com"
-            )
+            #expect({ if case .email(.api(.change(.request))) = match { true } else { false } }())
+            if case .email(.api(.change(.request(let value)))) = match {
+                #expect(value.newEmail == "newemail@example.com")
+            } else {
+                Issue.record("expected email.api.change.request, got \(match)")
+            }
         }
 
         @Test
@@ -211,15 +226,16 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/email/confirm")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/email/confirm")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.email.api.change.confirm))
-            #expect(
-                Identity.Route.cases.email.api.change.confirm.extract(match)?.token
-                    == "email-change-token"
-            )
+            #expect({ if case .email(.api(.change(.confirm))) = match { true } else { false } }())
+            if case .email(.api(.change(.confirm(let value)))) = match {
+                #expect(value.token == "email-change-token")
+            } else {
+                Issue.record("expected email.api.change.confirm, got \(match)")
+            }
         }
 
         @Test
@@ -231,15 +247,16 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/delete/request")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/delete/request")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.delete.api.request))
-            #expect(
-                Identity.Route.cases.delete.api.request.extract(match)?.reauthToken
-                    == "reauth-token-123"
-            )
+            #expect({ if case .delete(.api(.request)) = match { true } else { false } }())
+            if case .delete(.api(.request(let value))) = match {
+                #expect(value.reauthToken == "reauth-token-123")
+            } else {
+                Issue.record("expected delete.api.request, got \(match)")
+            }
         }
 
         @Test
@@ -247,11 +264,11 @@ extension Identity.Route {
             let api: Identity.API = .delete(.confirm)
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/delete/confirm")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/delete/confirm")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.delete.api.confirm))
+            #expect({ if case .delete(.api(.confirm)) = match { true } else { false } }())
         }
 
         @Test
@@ -259,11 +276,11 @@ extension Identity.Route {
             let api: Identity.API = .delete(.cancel)
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/delete/cancel")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/delete/cancel")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.delete.api.cancel))
+            #expect({ if case .delete(.api(.cancel)) = match { true } else { false } }())
         }
 
         @Test
@@ -271,11 +288,11 @@ extension Identity.Route {
             let api: Identity.API = .logout(.current)
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/logout")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/logout")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.logout.api.current))
+            #expect({ if case .logout(.api(.current)) = match { true } else { false } }())
         }
 
         @Test
@@ -283,11 +300,11 @@ extension Identity.Route {
             let api: Identity.API = .logout(.all)
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/logout/all")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/logout/all")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.logout.api.all))
+            #expect({ if case .logout(.api(.all)) = match { true } else { false } }())
         }
 
         @Test
@@ -297,12 +314,16 @@ extension Identity.Route {
             )
 
             let request = try router.request(for: .api(api))
-            #expect(request.url?.path == "/api/reauthorize")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/api/reauthorize")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.reauthorize.api))
-            #expect(Identity.Route.cases.reauthorize.api.extract(match)?.password == "password123")
+            #expect({ if case .reauthorize(.api) = match { true } else { false } }())
+            if case .reauthorize(.api(let value)) = match {
+                #expect(value.password == "password123")
+            } else {
+                Issue.record("expected reauthorize.api, got \(match)")
+            }
         }
     }
 }

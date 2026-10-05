@@ -5,8 +5,10 @@
 //  Created by Coen ten Thije Boonkkamp on 17/10/2024.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Password {
     /// Password management endpoints for handling password changes and resets.
@@ -30,6 +32,8 @@ extension Identity.Password {
     ///   ))
     /// )
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum API: Equatable, Sendable {
         /// Password reset flow for forgotten passwords
@@ -40,7 +44,7 @@ extension Identity.Password {
     }
 }
 
-extension Identity.Password.API {
+extension Identity.Password.API: HTTP.Routable {
     /// Routes password management requests to their appropriate handlers.
     ///
     /// Defines the URL structure for password operations:
@@ -51,44 +55,23 @@ extension Identity.Password.API {
     /// All endpoints expect form-encoded request bodies containing
     /// the necessary password operation data and enforce appropriate
     /// security measures.
-    public struct Router: ParserPrinter, Sendable {
+    public static var router: some HTTP.Router.`Protocol`<Identity.Password.API> {
+        Coder::Case(
+            Identity.Password.API.cases.reset.prism, Identity.Password.API.cases.reset.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("reset")
 
-        public init() {}
+            Identity.Password.Reset.API.router
+        }
 
-        /// The routing logic for password management endpoints.
-        ///
-        /// Composes routes for both password reset and change flows:
-        /// - Reset flow (request and confirm steps)
-        /// - Change flow (authenticated change)
-        ///
-        /// Each route enforces proper authentication and security
-        /// requirements for password operations.
-        public var body: some URLRouting.Router<Identity.Password.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.Password.API.cases.reset)) {
-                    Path { "reset" }
+        Coder::Case(
+            Identity.Password.API.cases.change.prism, Identity.Password.API.cases.change.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("change")
 
-                    OneOf {
-                        URLRouting.Route(.case(Identity.Password.Reset.API.cases.request)) {
-                            Identity.Password.Reset.Request.Router()
-                        }
-
-                        URLRouting.Route(.case(Identity.Password.Reset.API.cases.confirm)) {
-                            Identity.Password.Reset.Confirm.Router()
-                        }
-                    }
-                }
-
-                URLRouting.Route(.case(Identity.Password.API.cases.change)) {
-                    Path { "change" }
-
-                    OneOf {
-                        URLRouting.Route(.case(Identity.Password.Change.API.cases.request)) {
-                            Identity.Password.Change.Request.Router()
-                        }
-                    }
-                }
-            }
+            Identity.Password.Change.API.router
         }
     }
 }

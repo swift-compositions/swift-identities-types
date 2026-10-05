@@ -5,12 +5,14 @@
 //  Created by Coen ten Thije Boonkkamp on 07/02/2025.
 //
 
-import Dual
+import Case_Macro
+import Coder
 import Foundation
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 import JWT
 import RFC_6750
-import URLRouting
-import URL_Routing_Foundation_Integration
 
 extension Identity.Authentication {
     /// Authentication endpoints for managing user sessions and access.
@@ -32,6 +34,8 @@ extension Identity.Authentication {
     /// // Authenticate with a refresh token
     /// let auth = Identity.Authentication.API.token(.refresh(bearerToken))
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum API: Sendable, Hashable, Codable {
 
@@ -56,6 +60,8 @@ extension Identity.Authentication.API {
     /// Access tokens have shorter lifetimes but grant full API access, while
     /// refresh tokens have longer lifetimes but can only be used to obtain new
     /// access tokens.
+    @Prisms
+    @Folds
     @Cases
     public enum Token: Codable, Hashable, Sendable {
         /// Authenticates using a JWT access token
@@ -66,76 +72,46 @@ extension Identity.Authentication.API {
     }
 }
 
-extension Identity.Authentication.API {
-    /// Routes authentication requests to their appropriate handlers.
-    ///
-    /// Defines the URL structure and request/response formats for all authentication
-    /// endpoints:
-    ///
-    /// - Credentials: `POST /authenticate` with form-encoded credentials
-    /// - Access Token: `POST /authenticate/access` with bearer token
-    /// - Refresh Token: `POST /authenticate/refresh` with bearer token
-    /// - API Key: `POST /authenticate/api-key` with bearer token
-    ///
-    /// All authentication endpoints use POST methods for security and accept
-    /// appropriate authentication data in their request bodies.
-    public struct Router: ParserPrinter, Sendable {
+extension Identity.Authentication.API: HTTP.Routable {
 
-        public init() {}
+    public static var router: some HTTP.Router.`Protocol`<Self> {
+        Coder::Case(Self.cases.credentials.prism, Self.cases.credentials.fold, absent: .mismatch) {
+            HTTP.Method.post
+            HTTP.Segment.End()
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(
+                    Identity.Authentication.Credentials.self, decoder: .identities)
+            )
+        }
+        Coder::Case(Self.cases.token.prism, Self.cases.token.fold, absent: .mismatch) {
+            HTTP.Method.post
+            Identity.Authentication.API.Token.router
+        }
+        Coder::Case(Self.cases.apiKey.prism, Self.cases.apiKey.fold, absent: .mismatch) {
+            HTTP.Method.post
+            HTTP.Segment.apiKey
+            HTTP.Segment.End()
+            HTTP.Bearer()
+        }
+    }
+}
 
-        /// The routing logic for authentication endpoints.
-        ///
-        /// Routes are composed using the `OneOf` parser-printer to match requests
-        /// against the supported authentication methods. Each route specifies:
-        /// - The HTTP method (POST for all auth endpoints)
-        /// - The path components
-        /// - The request body format
-        public var body: some URLRouting.Router<Identity.Authentication.API> {
-            OneOf {
-                URLRouting.Route(.case(Identity.Authentication.API.cases.credentials)) {
-                    Method.post
-                    URLRouting.Body(
-                        coding: .form(
-                            Identity.Authentication.Credentials.self,
-                            decoder: .identities
-                        )
-                    )
-                }
+extension Identity.Authentication.API.Token: HTTP.Routable {
 
-                URLRouting.Route(.case(Identity.Authentication.API.cases.token)) {
-                    Method.post
-                    OneOf {
-                        URLRouting.Route(.case(Identity.Authentication.API.Token.cases.access)) {
-                            Path.access
-                            // The former Bearer-header alternative was dead code: its
-                            // `.convert` closures returned nil in BOTH directions, so the
-                            // branch never parsed nor printed (OneOf always fell through
-                            // to the cookie). branch:main's `.convert(apply:)` is total,
-                            // so the always-nil spelling no longer compiles; the branch is
-                            // deleted rather than migrated (behavior-preserving).
-                            Cookies {
-                                Field("access_token", .utf8.data.json(JWT.self))
-                            }
-                        }
-
-                        URLRouting.Route(.case(Identity.Authentication.API.Token.cases.refresh)) {
-                            Path.refresh
-                            OneOf {
-                                URLRouting.Body(coding: .json(JWT.self))
-
-                                Cookies {
-                                    Field("refresh_token", .utf8.data.json(JWT.self))
-                                }
-                            }
-                        }
-                    }
-                }
-
-                URLRouting.Route(.case(Identity.Authentication.API.cases.apiKey)) {
-                    Path.apiKey
-                    RFC_6750.Bearer.Router()
-                }
-            }
+    public static var router: some HTTP.Router.`Protocol`<Self> {
+        Coder::Case(Self.cases.access.prism, Self.cases.access.fold, absent: .mismatch) {
+            HTTP.Segment.access
+            HTTP.Segment.End()
+            HTTP.Cookie.Field("access_token", HTTP.Body.JSON<JWT>())
+        }
+        Coder::Case(Self.cases.refresh.prism, Self.cases.refresh.fold, absent: .mismatch) {
+            HTTP.Segment.refresh
+            HTTP.Segment.End()
+            Coder::OneOf.Two(
+                HTTP.Body.Coded(HTTP.Body.JSON<JWT>()),
+                HTTP.Cookie.Field("refresh_token", HTTP.Body.JSON<JWT>()),
+                absent: HTTP.Router.Error.mismatch
+            )
         }
     }
 }

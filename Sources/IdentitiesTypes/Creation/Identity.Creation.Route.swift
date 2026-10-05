@@ -5,8 +5,10 @@
 //  Feature-based routing for Create functionality
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Creation {
     /// Complete routing for identity creation features including both API and View endpoints.
@@ -20,6 +22,8 @@ extension Identity.Creation {
     /// let route = Identity.Creation.Route.api(.request(...))
     /// let viewRoute = Identity.Creation.Route.view(.request)
     /// ```
+    @Prisms
+    @Folds
     @Cases
     public enum Route: Equatable, Sendable {
         /// API endpoints for creation operations
@@ -30,30 +34,30 @@ extension Identity.Creation {
     }
 }
 
-extension Identity.Creation.Route {
+extension Identity.Creation.Route: HTTP.Routable {
     /// Router for the complete Create feature including both API and View routes.
     ///
     /// URL structure:
     /// - API routes: `/api/create/...`
     /// - View routes: `/create/...`
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
+    public static var router: some HTTP.Router.`Protocol`<Identity.Creation.Route> {
+        // API routes under /api prefix
+        Coder::Case(
+            Identity.Creation.Route.cases.api.prism, Identity.Creation.Route.cases.api.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("api")
+            HTTP.Segment("create")
+            Identity.Creation.API.router
+        }
 
-        public var body: some URLRouting.Router<Identity.Creation.Route> {
-            OneOf {
-                // API routes under /api prefix
-                URLRouting.Route(.case(Identity.Creation.Route.cases.api)) {
-                    Path { "api" }
-                    Path { "create" }
-                    Identity.Creation.API.Router()
-                }
-
-                // View routes (no /api prefix)
-                URLRouting.Route(.case(Identity.Creation.Route.cases.view)) {
-                    Path { "create" }
-                    Identity.Creation.View.Router()
-                }
-            }
+        // View routes (no /api prefix)
+        Coder::Case(
+            Identity.Creation.Route.cases.view.prism, Identity.Creation.Route.cases.view.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment("create")
+            Identity.Creation.View.router
         }
     }
 }

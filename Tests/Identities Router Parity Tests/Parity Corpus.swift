@@ -36,13 +36,13 @@ enum ParityCorpus {
         body(utf8): "eyJhbGciOiJub25lIn0.eyJzdWIiOiJwYXJpdHkifQ.AQID"
 
         == api.apiKey ==
-        method: <nil>
+        method: POST
         path: /api/authenticate/api-key
         header: authorization: Bearer parity-token-123
         body: <nil>
 
         == view.credentials ==
-        method: <nil>
+        method: GET
         path: /login
         body: <nil>
         """########## + "\n",
@@ -60,12 +60,12 @@ enum ParityCorpus {
         body(utf8): email=user%40example.com&token=verify-token-123
 
         == view.request ==
-        method: <nil>
+        method: GET
         path: /create/request
         body: <nil>
 
         == view.verify ==
-        method: <nil>
+        method: GET
         path: /create/verify
         query: token=verify-token-123
         query: email=user@example.com
@@ -89,7 +89,7 @@ enum ParityCorpus {
         body: <nil>
 
         == view.request ==
-        method: <nil>
+        method: GET
         path: /delete
         body: <nil>
         """########## + "\n",
@@ -107,7 +107,7 @@ enum ParityCorpus {
         body(utf8): token=email-token-123
 
         == view.change.request ==
-        method: <nil>
+        method: GET
         path: /email/change/request
         body: <nil>
 
@@ -118,7 +118,7 @@ enum ParityCorpus {
         body(utf8): token=email-token-123
 
         == view.change.reauthorization ==
-        method: <nil>
+        method: GET
         path: /email/change
         body: <nil>
         """########## + "\n",
@@ -175,37 +175,37 @@ enum ParityCorpus {
         """########## + "\n",
         "Facade View": ##########"""
         == authenticate.credentials ==
-        method: <nil>
+        method: GET
         path: /login
         body: <nil>
 
         == create.request ==
-        method: <nil>
+        method: GET
         path: /create/request
         body: <nil>
 
         == delete.request ==
-        method: <nil>
+        method: GET
         path: /delete
         body: <nil>
 
         == logout ==
-        method: <nil>
-        path: /logout
+        method: POST
+        path: /logout/view
         body: <nil>
 
         == email.change.request ==
-        method: <nil>
+        method: GET
         path: /email/change/request
         body: <nil>
 
         == password.reset.request ==
-        method: <nil>
+        method: GET
         path: /password/reset/request
         body: <nil>
 
         == mfa.manage ==
-        method: <nil>
+        method: GET
         path: /mfa/manage
         body: <nil>
 
@@ -226,8 +226,8 @@ enum ParityCorpus {
         body: <nil>
 
         == view ==
-        method: <nil>
-        path: /logout
+        method: POST
+        path: /logout/view
         body: <nil>
         """########## + "\n",
         "MFA": ##########"""
@@ -384,38 +384,38 @@ enum ParityCorpus {
         body(utf8): code=123456&method=totp&sessionToken=session-token-123
 
         == view.verify ==
-        method: <nil>
+        method: GET
         path: /mfa/verify
         query: sessionToken=session-token-123
         body: <nil>
 
         == view.manage ==
-        method: <nil>
+        method: GET
         path: /mfa/manage
         body: <nil>
 
         == view.totp.setup ==
-        method: <nil>
+        method: GET
         path: /mfa/totp/setup
         body: <nil>
 
         == view.totp.confirmSetup ==
-        method: <nil>
+        method: GET
         path: /mfa/totp/confirm-setup
         body: <nil>
 
         == view.totp.manage ==
-        method: <nil>
+        method: GET
         path: /mfa/totp/manage
         body: <nil>
 
         == view.backupCodes.display ==
-        method: <nil>
+        method: GET
         path: /mfa/backup-codes/display
         body: <nil>
 
         == view.backupCodes.verify ==
-        method: <nil>
+        method: GET
         path: /mfa/backup-codes/verify
         query: sessionToken=session-token-123
         body: <nil>
@@ -491,7 +491,7 @@ enum ParityCorpus {
         body(utf8): currentPassword=secret1234&newPassword=newSecret1
 
         == view.reset.request ==
-        method: <nil>
+        method: GET
         path: /password/reset/request
         body: <nil>
 
@@ -502,7 +502,7 @@ enum ParityCorpus {
         body(utf8): newPassword=newSecret1&token=reset-token-123
 
         == view.change.request ==
-        method: <nil>
+        method: GET
         path: /password/change/request
         body: <nil>
         """########## + "\n",

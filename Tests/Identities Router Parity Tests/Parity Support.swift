@@ -5,34 +5,13 @@
 //  Batch-0 wire-shape parity corpus support (url-routing-stack migration).
 //
 
-import Foundation
+import Byte
+import HTTP
+import HTTP_Router
+import IdentitiesTypes
+import RFC_3986
+import RFC_9110
 import Testing
-import URL_Routing_Test_Support
-
-/// Re-serializes JSON-object body lines with sorted keys so multi-key
-/// `Body(.json(...))` payloads (plain `JSONEncoder()`, unordered keys on
-/// Darwin) cannot key-order-flap between runs. Marker: `body(utf8/sorted-keys):`.
-/// Sites: MFA JSON bodies (TOTP verify/disable, SMS, Email, WebAuthn,
-/// BackupCodes verify).
-func sortJSONBodyLines(_ corpus: String) -> String {
-    corpus
-        .split(separator: "\n", omittingEmptySubsequences: false)
-        .map { line -> String in
-            let prefix = "body(utf8): {"
-            guard line.hasPrefix(prefix) else { return String(line) }
-            let json = String(line.dropFirst("body(utf8): ".count))
-            guard
-                let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)),
-                let sorted = try? JSONSerialization.data(
-                    withJSONObject: object,
-                    options: [.sortedKeys]
-                ),
-                let text = String(data: sorted, encoding: .utf8)
-            else { return String(line) }
-            return "body(utf8/sorted-keys): \(text)"
-        }
-        .joined(separator: "\n")
-}
 
 /// Compares a generated corpus against its Swift-embedded reference document.
 func assertParity(
@@ -65,4 +44,49 @@ private func difference(expected: String, actual: String) -> String {
         }
     }
     return differences.joined(separator: "\n")
+}
+
+enum Parity {
+    static func corpus<Route: HTTP.Routable>(
+        of routes: [(name: String, route: Route)],
+        via _: Route.Type
+    ) throws -> String where Route.Router.Output == Route {
+        try routes.map { name, route in
+            try block(name, HTTP.request(Route.self, for: route))
+        }.joined(separator: "\n\n") + "\n"
+    }
+
+    static func roundTrips<Route: HTTP.Routable & Equatable>(
+        _ route: Route,
+        via _: Route.Type
+    ) throws -> Bool where Route.Router.Output == Route {
+        try HTTP.route(Route.self, HTTP.request(Route.self, for: route)) == route
+    }
+
+    private static func block(_ name: String, _ request: HTTP.Router.Request) -> String {
+        var lines = ["== \(name) ==", "method: \(request.method.rawValue)"]
+        if case .resource(let uri) = request.target {
+            lines.append("path: \(uri.path?.description ?? "")")
+            for parameter in uri.query?.parameters ?? [] {
+                let key = decoded(parameter.key)
+                lines.append("query: " + (parameter.value.map { "\(key)=\(decoded($0))" } ?? key))
+            }
+        } else {
+            lines.append("path: <none>")
+        }
+        for field in request.headers {
+            lines.append("header: \(field.name.rawValue.lowercased()): \(field.value.rawValue)")
+        }
+        lines.append(
+            request.content.map {
+                "body(utf8): " + String(decoding: $0.map(\.bitPattern), as: UTF8.self)
+            }
+                ?? "body: <nil>"
+        )
+        return lines.joined(separator: "\n")
+    }
+
+    private static func decoded(_ raw: String) -> String {
+        String(decoding: RFC_3986.percentDecode(Array(raw.utf8)), as: UTF8.self)
+    }
 }

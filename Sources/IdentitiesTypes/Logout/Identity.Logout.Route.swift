@@ -5,14 +5,18 @@
 //  Created by Coen ten Thije Boonkkamp on 22/08/2025.
 //
 
-import Dual
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.Logout {
     /// Routes for logout functionality.
     ///
     /// Logout is a simple operation with just a single endpoint.
     /// It's typically accessed as a GET request that clears authentication.
+    @Prisms
+    @Folds
     @Cases
     public enum Route: Equatable, Sendable {
         case api(Identity.Logout.API)
@@ -20,25 +24,28 @@ extension Identity.Logout {
     }
 }
 
-extension Identity.Logout.Route {
+extension Identity.Logout.Route: HTTP.Routable {
     /// Router for logout routes.
     ///
     /// Since logout is a simple endpoint with no sub-routes,
     /// this router doesn't need to match anything additional.
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
+    public static var router: some HTTP.Router.`Protocol`<Identity.Logout.Route> {
+        Coder::Case(
+            Identity.Logout.Route.cases.api.prism, Identity.Logout.Route.cases.api.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Segment.logout
+            Identity.Logout.API.router
+        }
 
-        public var body: some URLRouting.Router<Identity.Logout.Route> {
-            OneOf {
-                URLRouting.Route(.case(Identity.Logout.Route.cases.api)) {
-                    Path.logout
-                    Identity.Logout.API.Router()
-                }
-
-                URLRouting.Route(.case(Identity.Logout.Route.cases.view)) {
-                    Path.logout
-                }
-            }
+        Coder::Case(
+            Identity.Logout.Route.cases.view.prism, Identity.Logout.Route.cases.view.fold,
+            absent: .mismatch
+        ) {
+            HTTP.Method.post
+            HTTP.Segment.logout
+            HTTP.Segment("view")
+            HTTP.Segment.End()
         }
     }
 }

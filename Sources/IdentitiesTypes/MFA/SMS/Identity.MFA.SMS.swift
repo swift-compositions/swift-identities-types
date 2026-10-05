@@ -5,21 +5,20 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA {
     /// SMS-specific types and operations.
     public struct SMS: @unchecked Sendable {
         public var client: Identity.MFA.SMS.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.SMS.API>
 
         public init(
-            client: Identity.MFA.SMS.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.SMS.API> = Identity.MFA
-                .SMS.API.Router().eraseToAnyParserPrinter()
+            client: Identity.MFA.SMS.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

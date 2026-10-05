@@ -9,6 +9,7 @@
 import EmailAddress
 import Foundation
 import JWT
+import RFC_6531
 import Tagged
 
 extension Identity {
@@ -59,8 +60,8 @@ extension Identity {
                 throw .identifierInvalid(parts[0])
             }
             let address: EmailAddress
-            do throws(EmailAddress.Error) {
-                address = try EmailAddress(parts[1])
+            do throws(RFC_6531.Mailbox.Error) {
+                address = EmailAddress(rfc6531: try RFC_6531.Mailbox(parts[1]))
             } catch {
                 throw .emailInvalid(parts[1])
             }

@@ -5,23 +5,24 @@
 //  Created by Coen ten Thije Boonkkamp on 22/08/2025.
 //
 
-import Foundation
+import HTTP
+import HTTP_Router
 import Testing
 
 @testable import IdentitiesTypes
 
-extension Identity.View.Router {
+extension Identity.View {
     @Suite
-    struct Test {
+    struct `View Router Tests` {
 
-        let router = Identity.View.Router()
+        let router = Identity.View.self
 
         @Test
         func `Parse basic MFA routes`() throws {
             // Test /mfa/manage
             let managePath = "/mfa/manage"
-            let request = URLRequestData(path: managePath)
-            let manageRoute = try router.parse(request)
+            let request = RouteRequest.make(path: managePath)
+            let manageRoute = try router.match(request: request)
 
             switch manageRoute {
             case .mfa(.manage):
@@ -34,11 +35,10 @@ extension Identity.View.Router {
 
             // Test /mfa/verify with query params
             let verifyPath = "/mfa/verify"
-            let verifyRequest = URLRequestData(
+            let verifyRequest = RouteRequest.make(
                 path: verifyPath,
-                query: ["sessionToken": ["test-token"], "attemptsRemaining": ["3"]]
-            )
-            let verifyRoute = try router.parse(verifyRequest)
+                query: [("sessionToken", "test-token"), ("attemptsRemaining", "3")])
+            let verifyRoute = try router.match(request: verifyRequest)
             if case .mfa(.verify(let challenge)) = verifyRoute {
                 #expect(challenge.sessionToken == "test-token")
                 #expect(challenge.attemptsRemaining == 3)
@@ -51,8 +51,8 @@ extension Identity.View.Router {
         func `Parse TOTP routes`() throws {
             // Test /mfa/totp/setup
             let setupPath = "/mfa/totp/setup"
-            let setupRequest = URLRequestData(path: setupPath)
-            let setupRoute = try router.parse(setupRequest)
+            let setupRequest = RouteRequest.make(path: setupPath)
+            let setupRoute = try router.match(request: setupRequest)
             if case .mfa(.totp(.setup)) = setupRoute {
                 // Success
             } else {
@@ -61,8 +61,8 @@ extension Identity.View.Router {
 
             // Test /mfa/totp/confirm
             let confirmPath = "/mfa/totp/confirm"
-            let confirmRequest = URLRequestData(path: confirmPath)
-            let confirmRoute = try router.parse(confirmRequest)
+            let confirmRequest = RouteRequest.make(path: confirmPath)
+            let confirmRoute = try router.match(request: confirmRequest)
             if case .mfa(.totp(.confirmSetup)) = confirmRoute {
                 // Success
             } else {
@@ -71,8 +71,8 @@ extension Identity.View.Router {
 
             // Test /mfa/totp/manage
             let managePath = "/mfa/totp/manage"
-            let manageRequest = URLRequestData(path: managePath)
-            let manageRoute = try router.parse(manageRequest)
+            let manageRequest = RouteRequest.make(path: managePath)
+            let manageRoute = try router.match(request: manageRequest)
             if case .mfa(.totp(.manage)) = manageRoute {
                 // Success
             } else {
@@ -84,8 +84,8 @@ extension Identity.View.Router {
         func `Parse backup codes display route`() throws {
             // Test /mfa/backup-codes (display)
             let displayPath = "/mfa/backup-codes"
-            let displayRequest = URLRequestData(path: displayPath)
-            let displayRoute = try router.parse(displayRequest)
+            let displayRequest = RouteRequest.make(path: displayPath)
+            let displayRoute = try router.match(request: displayRequest)
             if case .mfa(.backupCodes(.display)) = displayRoute {
                 // Success
             } else {
@@ -97,11 +97,10 @@ extension Identity.View.Router {
         func `Parse backup codes verify route`() throws {
             // Test /mfa/backup-codes/verify with query params
             let verifyPath = "/mfa/backup-codes/verify"
-            let verifyRequest = URLRequestData(
+            let verifyRequest = RouteRequest.make(
                 path: verifyPath,
-                query: ["sessionToken": ["test-token"], "attemptsRemaining": ["2"]]
-            )
-            let verifyRoute = try router.parse(verifyRequest)
+                query: [("sessionToken", "test-token"), ("attemptsRemaining", "2")])
+            let verifyRoute = try router.match(request: verifyRequest)
 
             if case .mfa(.backupCodes(.verify(let challenge))) = verifyRoute {
                 #expect(challenge.sessionToken == "test-token")
@@ -117,11 +116,9 @@ extension Identity.View.Router {
         func `Parse backup codes verify route without attempts remaining`() throws {
             // Test /mfa/backup-codes/verify with only sessionToken (default attemptsRemaining)
             let verifyPath = "/mfa/backup-codes/verify"
-            let verifyRequest = URLRequestData(
-                path: verifyPath,
-                query: ["sessionToken": ["test-token"]]
-            )
-            let verifyRoute = try router.parse(verifyRequest)
+            let verifyRequest = RouteRequest.make(
+                path: verifyPath, query: [("sessionToken", "test-token")])
+            let verifyRoute = try router.match(request: verifyRequest)
 
             if case .mfa(.backupCodes(.verify(let challenge))) = verifyRoute {
                 #expect(challenge.sessionToken == "test-token")
@@ -143,8 +140,8 @@ extension Identity.View.Router {
             // "/display" route. Parsing is unchanged (both the bare and the explicit form
             // still parse to `.display`); only the canonical printed URL moved.
             let displayRoute = Identity.View.mfa(.backupCodes(.display))
-            let displayURL = try router.print(displayRoute)
-            #expect(displayURL.path.joined(separator: "/") == "mfa/backup-codes/display")
+            let displayURL = try router.request(for: displayRoute)
+            #expect(displayURL.pathComponents.joined(separator: "/") == "mfa/backup-codes/display")
 
             // Test generating verify URL
             let challenge = Identity.MFA.URLChallenge(
@@ -152,18 +149,18 @@ extension Identity.View.Router {
                 attemptsRemaining: 2
             )
             let verifyRoute = Identity.View.mfa(.backupCodes(.verify(challenge)))
-            let verifyURL = try router.print(verifyRoute)
-            #expect(verifyURL.path.joined(separator: "/") == "mfa/backup-codes/verify")
-            #expect(verifyURL.query["sessionToken"]?.first == "test-token")
-            #expect(verifyURL.query["attemptsRemaining"]?.first == "2")
+            let verifyURL = try router.request(for: verifyRoute)
+            #expect(verifyURL.pathComponents.joined(separator: "/") == "mfa/backup-codes/verify")
+            #expect(verifyURL.queryItems["sessionToken"]?.first == "test-token")
+            #expect(verifyURL.queryItems["attemptsRemaining"]?.first == "2")
         }
 
         @Test
         func `Parse authentication routes`() throws {
             // Test /login
             let loginPath = "/login"
-            let loginRequest = URLRequestData(path: loginPath)
-            let loginRoute = try router.parse(loginRequest)
+            let loginRequest = RouteRequest.make(path: loginPath)
+            let loginRoute = try router.match(request: loginRequest)
             if case .authenticate(.credentials) = loginRoute {
                 // Success
             } else {
@@ -172,8 +169,8 @@ extension Identity.View.Router {
 
             // Test /credentials
             let credentialsPath = "/credentials"
-            let credentialsRequest = URLRequestData(path: credentialsPath)
-            let credentialsRoute = try router.parse(credentialsRequest)
+            let credentialsRequest = RouteRequest.make(path: credentialsPath)
+            let credentialsRoute = try router.match(request: credentialsRequest)
             if case .authenticate(.credentials) = credentialsRoute {
                 // Success
             } else {
@@ -181,9 +178,9 @@ extension Identity.View.Router {
             }
 
             // Test /logout
-            let logoutPath = "/logout"
-            let logoutRequest = URLRequestData(path: logoutPath)
-            let logoutRoute = try router.parse(logoutRequest)
+            let logoutPath = "/logout/view"
+            let logoutRequest = RouteRequest.make(.post, path: logoutPath)
+            let logoutRoute = try router.match(request: logoutRequest)
             if case .logout = logoutRoute {
                 // Success
             } else {
@@ -195,8 +192,8 @@ extension Identity.View.Router {
         func `Parse account management routes`() throws {
             // Test /create/request
             let createPath = "/create/request"
-            let createRequest = URLRequestData(path: createPath)
-            let createRoute = try router.parse(createRequest)
+            let createRequest = RouteRequest.make(path: createPath)
+            let createRoute = try router.match(request: createRequest)
             if case .create(.request) = createRoute {
                 // Success
             } else {
@@ -205,8 +202,8 @@ extension Identity.View.Router {
 
             // Test /delete
             let deletePath = "/delete"
-            let deleteRequest = URLRequestData(path: deletePath)
-            let deleteRoute = try router.parse(deleteRequest)
+            let deleteRequest = RouteRequest.make(path: deletePath)
+            let deleteRoute = try router.match(request: deleteRequest)
             if case .delete = deleteRoute {
                 // Success
             } else {
@@ -215,8 +212,8 @@ extension Identity.View.Router {
 
             // Test /password/reset/request
             let passwordResetPath = "/password/reset/request"
-            let passwordResetRequest = URLRequestData(path: passwordResetPath)
-            let passwordResetRoute = try router.parse(passwordResetRequest)
+            let passwordResetRequest = RouteRequest.make(path: passwordResetPath)
+            let passwordResetRoute = try router.match(request: passwordResetRequest)
             if case .password(.reset(.request)) = passwordResetRoute {
                 // Success
             } else {
@@ -225,8 +222,8 @@ extension Identity.View.Router {
 
             // Test /email/change/request
             let emailChangePath = "/email/change/request"
-            let emailChangeRequest = URLRequestData(path: emailChangePath)
-            let emailChangeRoute = try router.parse(emailChangeRequest)
+            let emailChangeRequest = RouteRequest.make(path: emailChangePath)
+            let emailChangeRoute = try router.match(request: emailChangeRequest)
             if case .email(.change(.request)) = emailChangeRoute {
                 // Success
             } else {
@@ -237,34 +234,33 @@ extension Identity.View.Router {
         @Test
         func `Comprehensive backup codes route parsing`() throws {
             // Test various URL formats for backup codes
-            let testCases: [(request: URLRequestData, isDisplay: Bool, description: String)] = [
-                (URLRequestData(path: "/mfa/backup-codes"), true, "Display route"),
-                (
-                    URLRequestData(path: "/mfa/backup-codes/"), true,
-                    "Display route with trailing slash"
-                ),
-                // Note: These should fail because sessionToken is required
-                // (URLRequestData(path: "/mfa/backup-codes/verify"), false, "Verify route without params"),
-                // (URLRequestData(path: "/mfa/backup-codes/verify/"), false, "Verify route with trailing slash"),
-                (
-                    URLRequestData(
-                        path: "/mfa/backup-codes/verify",
-                        query: ["sessionToken": ["abc"]]
+            let testCases: [(request: HTTP.Router.Request, isDisplay: Bool, description: String)] =
+                [
+                    (RouteRequest.make(path: "/mfa/backup-codes"), true, "Display route"),
+                    (
+                        RouteRequest.make(path: "/mfa/backup-codes/"), true,
+                        "Display route with trailing slash"
                     ),
-                    false,
-                    "Verify with session token"
-                ),
-                (
-                    URLRequestData(
-                        path: "/mfa/backup-codes/verify",
-                        query: ["sessionToken": ["abc"], "attemptsRemaining": ["5"]]
-                    ), false, "Verify with all params"
-                ),
-            ]
+                    // Note: These should fail because sessionToken is required
+                    // (RouteRequest.make(path: "/mfa/backup-codes/verify"), false, "Verify route without params"),
+                    // (RouteRequest.make(path: "/mfa/backup-codes/verify/"), false, "Verify route with trailing slash"),
+                    (
+                        RouteRequest.make(
+                            path: "/mfa/backup-codes/verify", query: [("sessionToken", "abc")]),
+                        false,
+                        "Verify with session token"
+                    ),
+                    (
+                        RouteRequest.make(
+                            path: "/mfa/backup-codes/verify",
+                            query: [("sessionToken", "abc"), ("attemptsRemaining", "5")]), false,
+                        "Verify with all params"
+                    ),
+                ]
 
             for testCase in testCases {
                 do {
-                    let route = try router.parse(testCase.request)
+                    let route = try router.match(request: testCase.request)
                     if testCase.isDisplay {
                         if case .mfa(.backupCodes(.display)) = route {
                             // Success
@@ -294,8 +290,8 @@ extension Identity.View.Router {
         func `Round-trip routing for backup codes`() throws {
             // Test display route round-trip
             let displayRoute = Identity.View.mfa(.backupCodes(.display))
-            let displayURL = try router.print(displayRoute)
-            let parsedDisplay = try router.parse(displayURL)
+            let displayURL = try router.request(for: displayRoute)
+            let parsedDisplay = try router.match(request: displayURL)
             if case .mfa(.backupCodes(.display)) = parsedDisplay {
                 // Success
             } else {
@@ -308,8 +304,8 @@ extension Identity.View.Router {
                 attemptsRemaining: 1
             )
             let verifyRoute = Identity.View.mfa(.backupCodes(.verify(challenge)))
-            let verifyURL = try router.print(verifyRoute)
-            let parsedVerify = try router.parse(verifyURL)
+            let verifyURL = try router.request(for: verifyRoute)
+            let parsedVerify = try router.match(request: verifyURL)
 
             if case .mfa(.backupCodes(.verify(let parsedChallenge))) = parsedVerify {
                 #expect(parsedChallenge.sessionToken == "round-trip-token")

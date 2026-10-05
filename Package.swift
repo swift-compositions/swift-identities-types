@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3.3
+// swift-tools-version: 6.4
 
 import Foundation
 import PackageDescription
@@ -14,10 +14,10 @@ extension Target.Dependency {
 extension Target.Dependency {
     static var jwt: Self { .product(name: "JWT", package: "swift-json-web-token") }
     static var emailAddress: Self { .product(name: "EmailAddress", package: "swift-emailaddress") }
-    static var dual: Self { .product(name: "Dual", package: "swift-dual") }
+    static var caseMacro: Self { .product(name: "Case Macro", package: "swift-optic") }
     static var rfc6750: Self { .product(name: "RFC 6750", package: "swift-rfc-6750") }
-    static var urlRouting: Self { .product(name: "URLRouting", package: "swift-url-routing") }
-    static var urlRoutingFoundationIntegration: Self { .product(name: "URL Routing Foundation Integration", package: "swift-url-routing") }
+    static var httpRouter: Self { .product(name: "HTTP Router", package: "swift-http-router") }
+    static var coder: Self { .product(name: "Coder", package: "swift-coder") }
     static var htmlFormCoder: Self {
         .product(name: "HTML Form Coder Codable", package: "swift-html-form-coder")
     }
@@ -46,13 +46,16 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/swift-compositions/swift-dependencies.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-emailaddress.git", branch: "main"),
+        .package(url: "https://github.com/swift-standards/swift-emailaddress-standard.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-json-web-token.git", branch: "main"),
         .package(url: "https://github.com/swift-atoms/swift-tagged.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-html-form-coder.git", branch: "main"),
         .package(url: "https://github.com/swift-standards/swift-html-standard.git", branch: "main"),
-        .package(url: "https://github.com/swift-compositions/swift-dual.git", branch: "main"),
+        .package(url: "https://github.com/swift-atoms/swift-optic.git", branch: "main"),
         .package(url: "https://github.com/swift-ietf/swift-rfc-6750.git", branch: "main"),
-        .package(url: "https://github.com/swift-compositions/swift-url-routing.git", branch: "main"),
+        .package(url: "https://github.com/swift-compositions/swift-http-router.git", branch: "main", traits: ["Foundation"]),
+        .package(url: "https://github.com/swift-atoms/swift-pair.git", branch: "main"),
+        .package(url: "https://github.com/swift-atoms/swift-coder.git", branch: "main", traits: ["Checkpoint", "Optic", "Skip", "Byte", "Operation", "Map", "Pair"]),
     ],
     targets: [
         .target(
@@ -60,11 +63,13 @@ let package = Package(
             dependencies: [
                 .dependencies,
                 .emailAddress,
+                .product(name: "EmailAddress Foundation Integration", package: "swift-emailaddress-standard"),
                 .jwt,
-                .dual,
+                .caseMacro,
                 .rfc6750,
-                .urlRouting,
-                .urlRoutingFoundationIntegration,
+                .httpRouter,
+                .coder,
+                .product(name: "Pair", package: "swift-pair"),
                 .htmlFormCoder,
                 .htmlStandard,
                 .tagged
@@ -81,7 +86,7 @@ let package = Package(
             name: "Identities Router Parity Tests",
             dependencies: [
                 .identitiesTypes,
-                .product(name: "URL Routing Test Support", package: "swift-url-routing")
+                .httpRouter
             ],
             path: "Tests/Identities Router Parity Tests"
         )

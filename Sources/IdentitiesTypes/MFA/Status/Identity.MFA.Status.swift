@@ -5,22 +5,20 @@
 //  Created by Coen ten Thije Boonkkamp on 19/08/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTTP
+import HTTP_Router
 
 extension Identity.MFA {
     /// Status-specific types and operations.
     public struct Status: @unchecked Sendable {
         public var client: Identity.MFA.Status.Client
-        public var router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.Status.API>
 
         public init(
-            client: Identity.MFA.Status.Client,
-            router: AnyParserPrinter<RFC_3986.URI.Request.Data, Identity.MFA.Status.API> = Identity
-                .MFA.Status.API
-                .Router().eraseToAnyParserPrinter()
+            client: Identity.MFA.Status.Client
         ) {
             self.client = client
-            self.router = router
         }
     }
 }

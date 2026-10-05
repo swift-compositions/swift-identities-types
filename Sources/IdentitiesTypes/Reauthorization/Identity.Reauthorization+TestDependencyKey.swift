@@ -20,8 +20,7 @@ extension Identity.Reauthorization: Dependency.Key.Test {
                         throw Identity.Reauthorization.Client.Error.reauthorize(reason: "\(error)")
                     }
                 }
-            ),
-            router: Identity.Reauthorization.Route.Router().eraseToAnyParserPrinter()
+            )
         )
     }
 }

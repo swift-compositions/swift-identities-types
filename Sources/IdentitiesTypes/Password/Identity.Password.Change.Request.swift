@@ -5,7 +5,11 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
-import URLRouting
+import Case_Macro
+import Coder
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 
 extension Identity.Password.Change {
     /// A request to change an authenticated user's password.
@@ -40,23 +44,17 @@ extension Identity.Password.Change {
     }
 }
 
-extension Identity.Password.Change.Request {
+extension Identity.Password.Change.Request: HTTP.Routable {
     /// Router for handling password change request endpoints.
     ///
     /// Routes POST requests to the "/request" path with form-encoded body.
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Password.Change.Request> {
-            // Route-level wrap (W3): collapses the Skip-chain's `Either` failure into
-            // `RFC_3986.URI.Routing.Error` (url-routing FormBodyRouteTests pattern).
-            URLRouting.Route(.identity()) {
-                Method.post
-                Path { "request" }
-                URLRouting.Body(
-                    coding: .form(Identity.Password.Change.Request.self, decoder: .identities)
-                )
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Password.Change.Request> {
+        Coder::Coder(HTTP.Router.Request.self, HTTP.Router.Request.self) {
+            HTTP.Method.post
+            HTTP.Segment("request")
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(Identity.Password.Change.Request.self, decoder: .identities))
+            HTTP.Segment.End()
         }
     }
 }

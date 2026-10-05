@@ -5,8 +5,12 @@
 //  Created by Coen ten Thije Boonkkamp on 11/09/2025.
 //
 
+import Case_Macro
+import Coder
 import EmailAddress
-import URLRouting
+import HTML_Form_Coder_Codable
+import HTTP
+import HTTP_Router
 
 extension Identity.Email.Change {
     /// A request to change a user's email address.
@@ -40,27 +44,21 @@ extension Identity.Email.Change.Request {
     public init(
         newEmail: EmailAddress
     ) {
-        self.newEmail = newEmail.rawValue
+        self.newEmail = newEmail.address
     }
 }
 
-extension Identity.Email.Change.Request {
+extension Identity.Email.Change.Request: HTTP.Routable {
     /// Router for handling email change request endpoints.
     ///
     /// Routes POST requests to the "/request" path with form-encoded body.
-    public struct Router: ParserPrinter, Sendable {
-        public init() {}
-
-        public var body: some URLRouting.Router<Identity.Email.Change.Request> {
-            // Route-level wrap (W3): collapses the Skip-chain's `Either` failure into
-            // `RFC_3986.URI.Routing.Error` (url-routing FormBodyRouteTests pattern).
-            URLRouting.Route(.identity()) {
-                Method.post
-                Path { "request" }
-                URLRouting.Body(
-                    coding: .form(Identity.Email.Change.Request.self, decoder: .identities)
-                )
-            }
+    public static var router: some HTTP.Router.`Protocol`<Identity.Email.Change.Request> {
+        Coder::Coder(HTTP.Router.Request.self, HTTP.Router.Request.self) {
+            HTTP.Method.post
+            HTTP.Segment("request")
+            HTTP.Body.Coded(
+                HTML.Form.Coder.Value(Identity.Email.Change.Request.self, decoder: .identities))
+            HTTP.Segment.End()
         }
     }
 }

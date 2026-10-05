@@ -43,8 +43,7 @@ extension Identity.Deletion: Dependency.Key.Test {
                         throw Identity.Deletion.Client.Error.confirm(reason: "\(error)")
                     }
                 }
-            ),
-            router: Identity.Deletion.Route.Router().eraseToAnyParserPrinter()
+            )
         )
     }
 }

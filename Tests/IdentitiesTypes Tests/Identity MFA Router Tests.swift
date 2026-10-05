@@ -8,27 +8,26 @@
 import Dependencies
 import Dependencies_Test_Support
 import EmailAddress
-import Foundation
 import Testing
 
 @testable import IdentitiesTypes
 
-extension Identity.MFA.API.Router {
+extension Identity.MFA.API {
     @Suite
-    struct Test {
+    struct `MFA API Router Tests` {
 
-        let router: Identity.MFA.API.Router = .init()
+        let router = Identity.MFA.API.self
 
         @Test
         func `Creates correct URL for MFA status get`() throws {
             let mfa: Identity.MFA.API = .status(.get)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/status")
-            #expect(request.httpMethod == "GET")
+            #expect(request.path == "/status")
+            #expect(request.method.rawValue == "GET")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.status.get))
+            #expect({ if case .status(.get) = match { true } else { false } }())
         }
 
         @Test
@@ -36,11 +35,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .status(.challenge)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/status/challenge")
-            #expect(request.httpMethod == "GET")
+            #expect(request.path == "/status/challenge")
+            #expect(request.method.rawValue == "GET")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.status.challenge))
+            #expect({ if case .status(.challenge) = match { true } else { false } }())
         }
 
         @Test
@@ -48,11 +47,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .totp(.setup)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/totp/setup")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/totp/setup")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.totp.setup))
+            #expect({ if case .totp(.setup) = match { true } else { false } }())
         }
 
         @Test
@@ -64,12 +63,16 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .totp(.verify(verifyRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/totp/verify")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/totp/verify")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.totp.verify))
-            #expect(Identity.MFA.API.cases.totp.verify.extract(match)?.code == "123456")
+            #expect({ if case .totp(.verify) = match { true } else { false } }())
+            if case .totp(.verify(let value)) = match {
+                #expect(value.code == "123456")
+            } else {
+                Issue.record("expected totp.verify, got \(match)")
+            }
         }
 
         @Test
@@ -78,11 +81,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .totp(.disable(disableRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/totp/disable")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/totp/disable")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.totp.disable))
+            #expect({ if case .totp(.disable) = match { true } else { false } }())
         }
 
         @Test
@@ -91,12 +94,16 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .sms(.setup(setupRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/sms/setup")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/sms/setup")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.sms.setup))
-            #expect(Identity.MFA.API.cases.sms.setup.extract(match)?.phoneNumber == "+1234567890")
+            #expect({ if case .sms(.setup) = match { true } else { false } }())
+            if case .sms(.setup(let value)) = match {
+                #expect(value.phoneNumber == "+1234567890")
+            } else {
+                Issue.record("expected sms.setup, got \(match)")
+            }
         }
 
         @Test
@@ -108,12 +115,16 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .sms(.verify(verifyRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/sms/verify")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/sms/verify")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.sms.verify))
-            #expect(Identity.MFA.API.cases.sms.verify.extract(match)?.code == "123456")
+            #expect({ if case .sms(.verify) = match { true } else { false } }())
+            if case .sms(.verify(let value)) = match {
+                #expect(value.code == "123456")
+            } else {
+                Issue.record("expected sms.verify, got \(match)")
+            }
         }
 
         @Test
@@ -121,11 +132,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .sms(.requestCode)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/sms/request")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/sms/request")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.sms.requestCode))
+            #expect({ if case .sms(.requestCode) = match { true } else { false } }())
         }
 
         @Test
@@ -134,11 +145,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .sms(.disable(disableRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/sms/disable")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/sms/disable")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.sms.disable))
+            #expect({ if case .sms(.disable) = match { true } else { false } }())
         }
 
         @Test
@@ -147,12 +158,16 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .email(.setup(setupRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/email/setup")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/email/setup")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.email.setup))
-            #expect(Identity.MFA.API.cases.email.setup.extract(match)?.email == "mfa@example.com")
+            #expect({ if case .email(.setup) = match { true } else { false } }())
+            if case .email(.setup(let value)) = match {
+                #expect(value.email == "mfa@example.com")
+            } else {
+                Issue.record("expected email.setup, got \(match)")
+            }
         }
 
         @Test
@@ -164,12 +179,16 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .email(.verify(verifyRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/email/verify")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/email/verify")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.email.verify))
-            #expect(Identity.MFA.API.cases.email.verify.extract(match)?.code == "123456")
+            #expect({ if case .email(.verify) = match { true } else { false } }())
+            if case .email(.verify(let value)) = match {
+                #expect(value.code == "123456")
+            } else {
+                Issue.record("expected email.verify, got \(match)")
+            }
         }
 
         @Test
@@ -177,11 +196,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .email(.requestCode)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/email/request")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/email/request")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.email.requestCode))
+            #expect({ if case .email(.requestCode) = match { true } else { false } }())
         }
 
         @Test
@@ -190,11 +209,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .email(.disable(disableRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/email/disable")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/email/disable")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.email.disable))
+            #expect({ if case .email(.disable) = match { true } else { false } }())
         }
 
         @Test
@@ -202,11 +221,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .backupCodes(.regenerate)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/backup-codes/regenerate")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/backup-codes/regenerate")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.backupCodes.regenerate))
+            #expect({ if case .backupCodes(.regenerate) = match { true } else { false } }())
         }
 
         @Test
@@ -218,14 +237,16 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .backupCodes(.verify(verifyRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/backup-codes/verify")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/backup-codes/verify")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.backupCodes.verify))
-            #expect(
-                Identity.MFA.API.cases.backupCodes.verify.extract(match)?.code == "backup-code-123"
-            )
+            #expect({ if case .backupCodes(.verify) = match { true } else { false } }())
+            if case .backupCodes(.verify(let value)) = match {
+                #expect(value.code == "backup-code-123")
+            } else {
+                Issue.record("expected backupCodes.verify, got \(match)")
+            }
         }
 
         @Test
@@ -233,11 +254,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .webauthn(.beginRegistration)
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/webauthn/register/begin")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/webauthn/register/begin")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.webauthn.beginRegistration))
+            #expect({ if case .webauthn(.beginRegistration) = match { true } else { false } }())
         }
 
         @Test
@@ -246,11 +267,11 @@ extension Identity.MFA.API.Router {
             let mfa: Identity.MFA.API = .webauthn(.disable(disableRequest))
 
             let request = try router.request(for: mfa)
-            #expect(request.url?.path == "/webauthn/disable")
-            #expect(request.httpMethod == "POST")
+            #expect(request.path == "/webauthn/disable")
+            #expect(request.method.rawValue == "POST")
 
             let match = try router.match(request: request)
-            #expect(match.is(\.webauthn.disable))
+            #expect({ if case .webauthn(.disable) = match { true } else { false } }())
         }
     }
 }
